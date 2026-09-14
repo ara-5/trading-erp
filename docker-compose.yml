@@ -17,5 +17,101 @@ services:
       timeout: 5s
       retries: 10
 
+  # One-off: applies pending Prisma migrations, then exits. `api` waits for this to succeed.
+  migrate:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+      target: build
+    working_dir: /app
+    command: ["npx", "prisma", "migrate", "deploy", "--schema", "apps/api/prisma/schema.prisma"]
+    environment:
+      DATABASE_URL: postgresql://erp:erp@postgres:5432/erp?schema=public
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # Optional: `docker compose --profile tools run --rm seed` — chart of accounts, admin user, demo master
+  # data. Not part of the default `up` so restarts don't re-run it (it's idempotent, but there's no need).
+  seed:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+      target: build
+    working_dir: /app/apps/api
+    command: ["npx", "tsx", "prisma/seed.ts"]
+    environment:
+      DATABASE_URL: postgresql://erp:erp@postgres:5432/erp?schema=public
+      SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL:-admin@erp.local}
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-Admin@12345}
+      SEED_FORCE_PASSWORD_CHANGE: ${SEED_FORCE_PASSWORD_CHANGE:-true}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    profiles: ["tools"]
+
+  # Optional: `docker compose --profile tools run --rm demo` — six months of realistic transaction
+  # history, driven through the running `api` service's HTTP API. Run `seed` first.
+  demo:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+      target: build
+    working_dir: /app/apps/api
+    command: ["npx", "tsx", "prisma/demo-data.ts"]
+    environment:
+      DEMO_API_URL: http://api:3001/api
+      SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL:-admin@erp.local}
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-Admin@12345}
+    depends_on:
+      api:
+        condition: service_healthy
+    profiles: ["tools"]
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: erp-api
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://erp:erp@postgres:5432/erp?schema=public
+      PORT: 3001
+      # Set JWT_SECRET in a .env file next to this compose file (see README for how to generate one).
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in your .env file}
+      ACCESS_TOKEN_TTL: ${ACCESS_TOKEN_TTL:-15m}
+      REFRESH_TOKEN_DAYS: ${REFRESH_TOKEN_DAYS:-7}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
+      TRUST_PROXY: ${TRUST_PROXY:-loopback}
+      DEMO_MODE: ${DEMO_MODE:-false}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      COPILOT_MODEL: ${COPILOT_MODEL:-claude-opus-5}
+    ports:
+      - "3001:3001"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3001/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    container_name: erp-web
+    restart: unless-stopped
+    environment:
+      API_PROXY_TARGET: http://api:3001
+    ports:
+      - "3000:3000"
+    depends_on:
+      api:
+        condition: service_healthy
+
 volumes:
   erp-pgdata:
