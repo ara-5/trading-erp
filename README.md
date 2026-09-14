@@ -88,4 +88,6 @@ apps/
 
 ## License
 
-[MIT](LICENSE) © 2026 Ara
+Copyright © 2026 Ara. Licensed under the [GNU Affero General Public License v3.0](LICENSE).
+
+You may use, modify and redistribute this software, but modified versions must also be released under AGPL-3.0 — including when you run them as a network service for others (section 13), in which case you must offer those users the corresponding source code.
