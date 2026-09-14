@@ -23,6 +23,7 @@ export interface AuthUser {
 export const IS_PUBLIC = 'isPublic';
 const ROLES = 'roles';
 const ALLOW_PENDING_PASSWORD = 'allowPendingPassword';
+const ALLOW_IN_DEMO_MODE = 'allowInDemoMode';
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 
 export const Public = () => SetMetadata(IS_PUBLIC, true);
@@ -32,6 +33,9 @@ export const Roles = (...roles: Role[]) => SetMetadata(ROLES, roles);
 
 /** Route stays reachable while the user still has to change their password. */
 export const AllowPendingPasswordChange = () => SetMetadata(ALLOW_PENDING_PASSWORD, true);
+
+/** Exempts a route from the DEMO_MODE write-block — for actions that are read-only in effect (e.g. AI copilot chat) despite using POST. */
+export const AllowInDemoMode = () => SetMetadata(ALLOW_IN_DEMO_MODE, true);
 
 export const CurrentUser = createParamDecorator(
   (_: unknown, ctx: ExecutionContext): AuthUser => ctx.switchToHttp().getRequest().user,
@@ -63,7 +67,8 @@ export class AuthGuard implements CanActivate {
     if (user.mcp && !this.reflector.getAllAndOverride<boolean>(ALLOW_PENDING_PASSWORD, targets)) {
       throw new ForbiddenException('You must change your password before continuing');
     }
-    if (process.env.DEMO_MODE === 'true' && !SAFE_METHODS.has(req.method)) {
+    const demoExempt = this.reflector.getAllAndOverride<boolean>(ALLOW_IN_DEMO_MODE, targets);
+    if (process.env.DEMO_MODE === 'true' && !SAFE_METHODS.has(req.method) && !demoExempt) {
       throw new ForbiddenException('This is a read-only demo — changes are disabled');
     }
 

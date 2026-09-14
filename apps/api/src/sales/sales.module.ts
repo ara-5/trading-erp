@@ -141,7 +141,8 @@ export class SalesService {
     return { ...customer, outstanding: balance };
   }
 
-  private async outstanding(tx: Tx, customerId: string) {
+  /** Public so other modules (e.g. the AI copilot) can reuse it without duplicating the balance math. */
+  async outstanding(tx: Tx, customerId: string) {
     const agg = await tx.salesInvoice.aggregate({
       where: { customerId, status: { in: ['POSTED', 'PARTIALLY_PAID'] } },
       _sum: { total: true, amountPaid: true },
@@ -826,5 +827,6 @@ export class SalesController {
   imports: [AccountingModule, InventoryModule],
   controllers: [SalesController],
   providers: [SalesService],
+  exports: [SalesService],
 })
 export class SalesModule {}

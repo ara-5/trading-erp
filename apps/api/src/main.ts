@@ -7,7 +7,7 @@ import { API_PREFIX, configureApp } from './bootstrap';
 import { setupSwagger } from './common/swagger';
 
 async function bootstrap() {
-  const app = configureApp(await NestFactory.create<NestExpressApplication>(AppModule));
+  const app = configureApp(await NestFactory.create<NestExpressApplication>(AppModule, { bodyParser: false }));
   app.enableShutdownHooks();
   if (process.env.SWAGGER !== 'false') setupSwagger(app, API_PREFIX);
 

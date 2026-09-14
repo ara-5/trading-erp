@@ -337,6 +337,6 @@ export class InventoryController {
   imports: [AccountingModule],
   controllers: [InventoryController],
   providers: [InventoryService, StockService],
-  exports: [StockService],
+  exports: [InventoryService, StockService],
 })
 export class InventoryModule {}

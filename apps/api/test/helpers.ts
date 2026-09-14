@@ -11,7 +11,7 @@ export const uid = () => Math.random().toString(36).slice(2, 8).toUpperCase();
 
 export async function createApp() {
   const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
-  const app = configureApp(moduleRef.createNestApplication<NestExpressApplication>({ logger: ['error'] }));
+  const app = configureApp(moduleRef.createNestApplication<NestExpressApplication>({ logger: ['error'], bodyParser: false }));
   await app.init();
   return app;
 }

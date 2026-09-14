@@ -8,6 +8,7 @@ import { AdminModule } from './admin/admin.module';
 import { AuthModule } from './auth/auth.module';
 import { AuthGuard, Public } from './common/auth';
 import { CommonModule } from './common/common.module';
+import { CopilotModule } from './copilot/copilot.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { HrModule } from './hr/hr.module';
 import { InventoryModule } from './inventory/inventory.module';
@@ -47,6 +48,7 @@ class HealthController {
     SalesModule,
     HrModule,
     DashboardModule,
+    CopilotModule,
   ],
   controllers: [HealthController],
   providers: [

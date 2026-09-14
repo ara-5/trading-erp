@@ -141,7 +141,8 @@ export class HrService {
 
   // ── Leave ──
 
-  private async leaveBalances(tx: Tx, employeeId: string, asOf: Date) {
+  /** Public so other modules (e.g. the AI copilot) can reuse it without duplicating the balance math. */
+  async leaveBalances(tx: Tx, employeeId: string, asOf: Date) {
     const yearStart = new Date(Date.UTC(asOf.getUTCFullYear(), 0, 1));
     const yearEnd = new Date(Date.UTC(asOf.getUTCFullYear(), 11, 31));
     const [types, used] = await Promise.all([
@@ -553,5 +554,6 @@ export class HrController {
   imports: [AccountingModule],
   controllers: [HrController],
   providers: [HrService],
+  exports: [HrService],
 })
 export class HrModule {}
