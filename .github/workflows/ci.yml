@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  DATABASE_URL: postgresql://erp:erp@localhost:5432/erp?schema=public
+  TEST_DATABASE_URL: postgresql://erp:erp@localhost:5432/erp_test?schema=public
+  JWT_SECRET: ci-secret-not-for-production-0123456789abcdef
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: erp
+          POSTGRES_PASSWORD: erp
+          POSTGRES_DB: erp
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U erp"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+        working-directory: apps/api
+
+      - name: Apply migrations
+        run: npx prisma migrate deploy
+        working-directory: apps/api
+
+      - name: Type-check
+        run: npm run typecheck
+
+      - name: API unit tests
+        run: npm run test -w @erp/api -- --ci
+
+      - name: API end-to-end tests
+        run: npm run test:e2e -w @erp/api
+
+      - name: Build API
+        run: npm run build -w @erp/api
+
+      - name: Build web app
+        run: npm run build -w @erp/web

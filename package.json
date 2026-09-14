@@ -11,10 +11,14 @@
     "db:down": "docker compose down",
     "db:migrate": "npm run prisma:migrate -w @erp/api",
     "db:seed": "npm run seed -w @erp/api",
+    "db:demo": "npm run demo -w @erp/api",
     "dev:api": "npm run start:dev -w @erp/api",
     "dev:web": "npm run dev -w @erp/web",
     "dev": "concurrently -n api,web -c blue,magenta \"npm:dev:api\" \"npm:dev:web\"",
-    "build": "npm run build -w @erp/api && npm run build -w @erp/web"
+    "build": "npm run build -w @erp/api && npm run build -w @erp/web",
+    "typecheck": "npm run typecheck -w @erp/api && npm run typecheck -w @erp/web",
+    "test": "npm run test -w @erp/api",
+    "test:e2e": "npm run test:e2e -w @erp/api"
   },
   "devDependencies": {
     "concurrently": "^9.2.4"
