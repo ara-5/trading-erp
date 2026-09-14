@@ -85,3 +85,7 @@ apps/
 | `npm run db:migrate` | Apply Prisma migrations              |
 | `npm run db:seed`    | Seed reference and demo data (idempotent) |
 | `npm run db:down`    | Stop Postgres                        |
+
+## License
+
+[MIT](LICENSE) © 2026 Ara
