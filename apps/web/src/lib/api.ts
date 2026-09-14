@@ -125,12 +125,13 @@ export async function apiStream(path: string, init: { method?: string; body?: un
 
 /** Parses an SSE byte stream into `{ event, data }` messages. */
 export async function* readEvents(stream: ReadableStream<Uint8Array>) {
-  const reader = stream.pipeThrough(new TextDecoderStream()).getReader();
+  const reader = stream.getReader();
+  const decoder = new TextDecoder();
   let buffer = '';
   while (true) {
     const { value, done } = await reader.read();
     if (done) break;
-    buffer += value;
+    buffer += decoder.decode(value, { stream: true });
     let boundary: number;
     while ((boundary = buffer.indexOf('\n\n')) !== -1) {
       const chunk = buffer.slice(0, boundary);

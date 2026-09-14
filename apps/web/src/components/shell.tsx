@@ -151,13 +151,15 @@ export function Shell({ children }: { children: ReactNode }) {
       </div>
       <div className="border-t border-slate-200 p-3">
         <div className="flex items-center gap-2.5 rounded-lg px-2 py-1.5">
-          <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-slate-200 text-xs font-semibold text-slate-700">
-            {user?.name.slice(0, 1).toUpperCase()}
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium text-slate-900">{user?.name}</p>
-            <p className="truncate text-xs text-slate-500">{user && humanize(user.role)}</p>
-          </div>
+          <Link href="/account" className="flex min-w-0 flex-1 items-center gap-2.5 rounded-lg hover:bg-slate-100">
+            <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-slate-200 text-xs font-semibold text-slate-700">
+              {user?.name.slice(0, 1).toUpperCase()}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium text-slate-900">{user?.name}</p>
+              <p className="truncate text-xs text-slate-500">{user && humanize(user.role)}</p>
+            </div>
+          </Link>
           <button onClick={logout} className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700" aria-label="Sign out" title="Sign out">
             <LogOut className="size-4" />
           </button>
