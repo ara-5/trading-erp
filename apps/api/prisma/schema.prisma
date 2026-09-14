@@ -1,0 +1,734 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────── System ───────────────────────────────
+
+enum Role {
+  ADMIN
+  ACCOUNTANT
+  SALES
+  INVENTORY
+  PURCHASING
+  HR
+  VIEWER
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+  role         Role     @default(VIEWER)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  employee       Employee?
+  leads          Lead[]
+  auditLogs      AuditLog[]
+  approvedLeaves LeaveRequest[] @relation("LeaveApprover")
+}
+
+model CompanySettings {
+  id              Int      @id @default(1)
+  name            String
+  legalName       String?
+  taxNumber       String?
+  email           String?
+  phone           String?
+  address         String?
+  currency        String   @default("USD")
+  fiscalYearStart Int      @default(1) // month 1-12
+  updatedAt       DateTime @updatedAt
+}
+
+model NumberSequence {
+  key     String @id // e.g. "SO", "INV"
+  prefix  String
+  next    Int    @default(1)
+  padding Int    @default(5)
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  action    String
+  entity    String
+  entityId  String?
+  data      Json?
+  createdAt DateTime @default(now())
+
+  @@index([entity, entityId])
+  @@index([createdAt])
+}
+
+// ───────────────────────────── Accounting ─────────────────────────────
+
+enum AccountType {
+  ASSET
+  LIABILITY
+  EQUITY
+  INCOME
+  EXPENSE
+}
+
+model Account {
+  id        String      @id @default(cuid())
+  code      String      @unique
+  name      String
+  type      AccountType
+  parentId  String?
+  parent    Account?    @relation("AccountTree", fields: [parentId], references: [id])
+  children  Account[]   @relation("AccountTree")
+  isActive  Boolean     @default(true)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  lines          JournalLine[]
+  systemAccounts SystemAccount[]
+  payments       Payment[]
+  billLines      PurchaseBillLine[]
+}
+
+/// Maps logical roles (e.g. accounts receivable) to concrete GL accounts used by automatic postings.
+enum SystemAccountKey {
+  CASH
+  BANK
+  ACCOUNTS_RECEIVABLE
+  ACCOUNTS_PAYABLE
+  INVENTORY
+  SALES_REVENUE
+  COST_OF_GOODS_SOLD
+  TAX_PAYABLE
+  TAX_RECEIVABLE
+  INVENTORY_ADJUSTMENT
+  GOODS_RECEIVED_NOT_BILLED
+  SALARY_EXPENSE
+  SALARY_PAYABLE
+  PAYROLL_TAX_PAYABLE
+  RETAINED_EARNINGS
+}
+
+model SystemAccount {
+  key       SystemAccountKey @id
+  accountId String
+  account   Account          @relation(fields: [accountId], references: [id])
+}
+
+enum JournalStatus {
+  DRAFT
+  POSTED
+  VOID
+}
+
+enum SourceType {
+  MANUAL
+  SALES_INVOICE
+  PURCHASE_BILL
+  PAYMENT
+  PAYROLL
+  STOCK
+}
+
+model JournalEntry {
+  id          String        @id @default(cuid())
+  number      String        @unique
+  date        DateTime
+  description String
+  reference   String?
+  status      JournalStatus @default(DRAFT)
+  sourceType  SourceType    @default(MANUAL)
+  sourceId    String?
+  postedAt    DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  lines JournalLine[]
+
+  @@index([date])
+  @@index([sourceType, sourceId])
+}
+
+model JournalLine {
+  id          String       @id @default(cuid())
+  entryId     String
+  entry       JournalEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  accountId   String
+  account     Account      @relation(fields: [accountId], references: [id])
+  debit       Decimal      @default(0) @db.Decimal(18, 2)
+  credit      Decimal      @default(0) @db.Decimal(18, 2)
+  description String?
+
+  @@index([accountId])
+}
+
+model TaxRate {
+  id       String   @id @default(cuid())
+  name     String   @unique
+  rate     Decimal  @db.Decimal(5, 2) // percent, e.g. 15.00
+  isActive Boolean  @default(true)
+  products Product[]
+}
+
+enum PaymentDirection {
+  RECEIVED
+  PAID
+}
+
+enum PaymentMethod {
+  CASH
+  BANK_TRANSFER
+  CARD
+  CHEQUE
+  OTHER
+}
+
+model Payment {
+  id             String           @id @default(cuid())
+  number         String           @unique
+  date           DateTime
+  direction      PaymentDirection
+  method         PaymentMethod    @default(BANK_TRANSFER)
+  amount         Decimal          @db.Decimal(18, 2)
+  reference      String?
+  notes          String?
+  accountId      String // cash / bank account the money moved through
+  account        Account          @relation(fields: [accountId], references: [id])
+  customerId     String?
+  customer       Customer?        @relation(fields: [customerId], references: [id])
+  supplierId     String?
+  supplier       Supplier?        @relation(fields: [supplierId], references: [id])
+  salesInvoiceId String?
+  salesInvoice   SalesInvoice?    @relation(fields: [salesInvoiceId], references: [id])
+  purchaseBillId String?
+  purchaseBill   PurchaseBill?    @relation(fields: [purchaseBillId], references: [id])
+  journalEntryId String?          @unique
+  createdAt      DateTime         @default(now())
+}
+
+// ───────────────────────────── Inventory ──────────────────────────────
+
+model ProductCategory {
+  id       String    @id @default(cuid())
+  name     String    @unique
+  products Product[]
+}
+
+model Product {
+  id             String           @id @default(cuid())
+  sku            String           @unique
+  name           String
+  description    String?
+  uom            String           @default("pcs")
+  categoryId     String?
+  category       ProductCategory? @relation(fields: [categoryId], references: [id])
+  trackInventory Boolean          @default(true)
+  costPrice      Decimal          @default(0) @db.Decimal(18, 4) // moving weighted average
+  salePrice      Decimal          @default(0) @db.Decimal(18, 2)
+  taxRateId      String?
+  taxRate        TaxRate?         @relation(fields: [taxRateId], references: [id])
+  reorderLevel   Decimal          @default(0) @db.Decimal(18, 3)
+  isActive       Boolean          @default(true)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  stockLevels        StockLevel[]
+  movements          StockMovement[]
+  quotationLines     QuotationLine[]
+  salesOrderLines    SalesOrderLine[]
+  salesInvoiceLines  SalesInvoiceLine[]
+  purchaseOrderLines PurchaseOrderLine[]
+  purchaseBillLines  PurchaseBillLine[]
+}
+
+model Warehouse {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  name      String
+  address   String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  stockLevels    StockLevel[]
+  movements      StockMovement[]
+  salesOrders    SalesOrder[]
+  purchaseOrders PurchaseOrder[]
+}
+
+model StockLevel {
+  productId   String
+  product     Product   @relation(fields: [productId], references: [id])
+  warehouseId String
+  warehouse   Warehouse @relation(fields: [warehouseId], references: [id])
+  quantity    Decimal   @default(0) @db.Decimal(18, 3)
+
+  @@id([productId, warehouseId])
+}
+
+enum StockMovementType {
+  RECEIPT
+  DELIVERY
+  ADJUSTMENT
+  TRANSFER_IN
+  TRANSFER_OUT
+}
+
+model StockMovement {
+  id          String            @id @default(cuid())
+  date        DateTime          @default(now())
+  type        StockMovementType
+  productId   String
+  product     Product           @relation(fields: [productId], references: [id])
+  warehouseId String
+  warehouse   Warehouse         @relation(fields: [warehouseId], references: [id])
+  quantity    Decimal           @db.Decimal(18, 3) // signed: + in, - out
+  unitCost    Decimal           @db.Decimal(18, 4)
+  reference   String?
+  sourceType  String?
+  sourceId    String?
+  createdAt   DateTime          @default(now())
+
+  @@index([productId, date])
+}
+
+// ───────────────────────────── Purchasing ─────────────────────────────
+
+model Supplier {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  name      String
+  email     String?
+  phone     String?
+  address   String?
+  taxNumber String?
+  paymentTermsDays Int @default(30)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  purchaseOrders PurchaseOrder[]
+  bills          PurchaseBill[]
+  payments       Payment[]
+}
+
+enum PurchaseOrderStatus {
+  DRAFT
+  APPROVED
+  PARTIALLY_RECEIVED
+  RECEIVED
+  CANCELLED
+}
+
+model PurchaseOrder {
+  id           String              @id @default(cuid())
+  number       String              @unique
+  supplierId   String
+  supplier     Supplier            @relation(fields: [supplierId], references: [id])
+  warehouseId  String
+  warehouse    Warehouse           @relation(fields: [warehouseId], references: [id])
+  date         DateTime
+  expectedDate DateTime?
+  status       PurchaseOrderStatus @default(DRAFT)
+  notes        String?
+  subtotal     Decimal             @default(0) @db.Decimal(18, 2)
+  taxTotal     Decimal             @default(0) @db.Decimal(18, 2)
+  total        Decimal             @default(0) @db.Decimal(18, 2)
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  lines PurchaseOrderLine[]
+  bills PurchaseBill[]
+}
+
+model PurchaseOrderLine {
+  id          String        @id @default(cuid())
+  orderId     String
+  order       PurchaseOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId   String
+  product     Product       @relation(fields: [productId], references: [id])
+  description String?
+  quantity    Decimal       @db.Decimal(18, 3)
+  receivedQty Decimal       @default(0) @db.Decimal(18, 3)
+  billedQty   Decimal       @default(0) @db.Decimal(18, 3)
+  unitPrice   Decimal       @db.Decimal(18, 2)
+  taxRate     Decimal       @default(0) @db.Decimal(5, 2)
+  lineTotal   Decimal       @db.Decimal(18, 2)
+  taxAmount   Decimal       @db.Decimal(18, 2)
+}
+
+enum BillStatus {
+  DRAFT
+  POSTED
+  PARTIALLY_PAID
+  PAID
+  VOID
+}
+
+model PurchaseBill {
+  id              String         @id @default(cuid())
+  number          String         @unique
+  supplierRef     String?
+  supplierId      String
+  supplier        Supplier       @relation(fields: [supplierId], references: [id])
+  purchaseOrderId String?
+  purchaseOrder   PurchaseOrder? @relation(fields: [purchaseOrderId], references: [id])
+  date            DateTime
+  dueDate         DateTime
+  status          BillStatus     @default(DRAFT)
+  subtotal        Decimal        @default(0) @db.Decimal(18, 2)
+  taxTotal        Decimal        @default(0) @db.Decimal(18, 2)
+  total           Decimal        @default(0) @db.Decimal(18, 2)
+  amountPaid      Decimal        @default(0) @db.Decimal(18, 2)
+  journalEntryId  String?        @unique
+  notes           String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  lines    PurchaseBillLine[]
+  payments Payment[]
+}
+
+model PurchaseBillLine {
+  id          String       @id @default(cuid())
+  billId      String
+  bill        PurchaseBill @relation(fields: [billId], references: [id], onDelete: Cascade)
+  productId   String?
+  product     Product?     @relation(fields: [productId], references: [id])
+  accountId   String? // expense account for non-stock lines
+  account     Account?     @relation(fields: [accountId], references: [id])
+  description String
+  quantity    Decimal      @db.Decimal(18, 3)
+  unitPrice   Decimal      @db.Decimal(18, 2)
+  taxRate     Decimal      @default(0) @db.Decimal(5, 2)
+  lineTotal   Decimal      @db.Decimal(18, 2)
+  taxAmount   Decimal      @db.Decimal(18, 2)
+}
+
+// ───────────────────────────── Sales & CRM ────────────────────────────
+
+model Customer {
+  id               String   @id @default(cuid())
+  code             String   @unique
+  name             String
+  email            String?
+  phone            String?
+  address          String?
+  taxNumber        String?
+  creditLimit      Decimal  @default(0) @db.Decimal(18, 2)
+  paymentTermsDays Int      @default(30)
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  leads       Lead[]
+  quotations  Quotation[]
+  salesOrders SalesOrder[]
+  invoices    SalesInvoice[]
+  payments    Payment[]
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  PROPOSAL
+  WON
+  LOST
+}
+
+model Lead {
+  id             String     @id @default(cuid())
+  name           String
+  company        String?
+  email          String?
+  phone          String?
+  source         String?
+  status         LeadStatus @default(NEW)
+  estimatedValue Decimal    @default(0) @db.Decimal(18, 2)
+  notes          String?
+  ownerId        String?
+  owner          User?      @relation(fields: [ownerId], references: [id])
+  customerId     String?
+  customer       Customer?  @relation(fields: [customerId], references: [id])
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+}
+
+enum QuotationStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  REJECTED
+  CONVERTED
+}
+
+model Quotation {
+  id         String          @id @default(cuid())
+  number     String          @unique
+  customerId String
+  customer   Customer        @relation(fields: [customerId], references: [id])
+  date       DateTime
+  validUntil DateTime?
+  status     QuotationStatus @default(DRAFT)
+  notes      String?
+  subtotal   Decimal         @default(0) @db.Decimal(18, 2)
+  taxTotal   Decimal         @default(0) @db.Decimal(18, 2)
+  total      Decimal         @default(0) @db.Decimal(18, 2)
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+
+  lines       QuotationLine[]
+  salesOrders SalesOrder[]
+}
+
+model QuotationLine {
+  id          String    @id @default(cuid())
+  quotationId String
+  quotation   Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  productId   String
+  product     Product   @relation(fields: [productId], references: [id])
+  description String?
+  quantity    Decimal   @db.Decimal(18, 3)
+  unitPrice   Decimal   @db.Decimal(18, 2)
+  discountPct Decimal   @default(0) @db.Decimal(5, 2)
+  taxRate     Decimal   @default(0) @db.Decimal(5, 2)
+  lineTotal   Decimal   @db.Decimal(18, 2)
+  taxAmount   Decimal   @db.Decimal(18, 2)
+}
+
+enum SalesOrderStatus {
+  DRAFT
+  CONFIRMED
+  PARTIALLY_DELIVERED
+  DELIVERED
+  CANCELLED
+}
+
+model SalesOrder {
+  id          String           @id @default(cuid())
+  number      String           @unique
+  customerId  String
+  customer    Customer         @relation(fields: [customerId], references: [id])
+  quotationId String?
+  quotation   Quotation?       @relation(fields: [quotationId], references: [id])
+  warehouseId String
+  warehouse   Warehouse        @relation(fields: [warehouseId], references: [id])
+  date        DateTime
+  status      SalesOrderStatus @default(DRAFT)
+  notes       String?
+  subtotal    Decimal          @default(0) @db.Decimal(18, 2)
+  taxTotal    Decimal          @default(0) @db.Decimal(18, 2)
+  total       Decimal          @default(0) @db.Decimal(18, 2)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  lines    SalesOrderLine[]
+  invoices SalesInvoice[]
+}
+
+model SalesOrderLine {
+  id           String     @id @default(cuid())
+  orderId      String
+  order        SalesOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId    String
+  product      Product    @relation(fields: [productId], references: [id])
+  description  String?
+  quantity     Decimal    @db.Decimal(18, 3)
+  deliveredQty Decimal    @default(0) @db.Decimal(18, 3)
+  invoicedQty  Decimal    @default(0) @db.Decimal(18, 3)
+  unitPrice    Decimal    @db.Decimal(18, 2)
+  discountPct  Decimal    @default(0) @db.Decimal(5, 2)
+  taxRate      Decimal    @default(0) @db.Decimal(5, 2)
+  lineTotal    Decimal    @db.Decimal(18, 2)
+  taxAmount    Decimal    @db.Decimal(18, 2)
+}
+
+enum InvoiceStatus {
+  DRAFT
+  POSTED
+  PARTIALLY_PAID
+  PAID
+  VOID
+}
+
+model SalesInvoice {
+  id             String        @id @default(cuid())
+  number         String        @unique
+  customerId     String
+  customer       Customer      @relation(fields: [customerId], references: [id])
+  salesOrderId   String?
+  salesOrder     SalesOrder?   @relation(fields: [salesOrderId], references: [id])
+  date           DateTime
+  dueDate        DateTime
+  status         InvoiceStatus @default(DRAFT)
+  subtotal       Decimal       @default(0) @db.Decimal(18, 2)
+  taxTotal       Decimal       @default(0) @db.Decimal(18, 2)
+  total          Decimal       @default(0) @db.Decimal(18, 2)
+  amountPaid     Decimal       @default(0) @db.Decimal(18, 2)
+  journalEntryId String?       @unique
+  notes          String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  lines    SalesInvoiceLine[]
+  payments Payment[]
+}
+
+model SalesInvoiceLine {
+  id          String       @id @default(cuid())
+  invoiceId   String
+  invoice     SalesInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  productId   String?
+  product     Product?     @relation(fields: [productId], references: [id])
+  description String
+  quantity    Decimal      @db.Decimal(18, 3)
+  unitPrice   Decimal      @db.Decimal(18, 2)
+  discountPct Decimal      @default(0) @db.Decimal(5, 2)
+  taxRate     Decimal      @default(0) @db.Decimal(5, 2)
+  lineTotal   Decimal      @db.Decimal(18, 2)
+  taxAmount   Decimal      @db.Decimal(18, 2)
+}
+
+// ──────────────────────────── HR & Payroll ────────────────────────────
+
+model Department {
+  id        String     @id @default(cuid())
+  name      String     @unique
+  createdAt DateTime   @default(now())
+  employees Employee[]
+}
+
+enum EmployeeStatus {
+  ACTIVE
+  ON_LEAVE
+  TERMINATED
+}
+
+model Employee {
+  id              String         @id @default(cuid())
+  code            String         @unique
+  firstName       String
+  lastName        String
+  email           String?        @unique
+  phone           String?
+  jobTitle        String?
+  departmentId    String?
+  department      Department?    @relation(fields: [departmentId], references: [id])
+  hireDate        DateTime
+  terminationDate DateTime?
+  status          EmployeeStatus @default(ACTIVE)
+  baseSalary      Decimal        @db.Decimal(18, 2) // monthly
+  allowances      Decimal        @default(0) @db.Decimal(18, 2) // monthly fixed
+  taxRatePct      Decimal        @default(0) @db.Decimal(5, 2)
+  bankAccount     String?
+  userId          String?        @unique
+  user            User?          @relation(fields: [userId], references: [id])
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  attendance    Attendance[]
+  leaveRequests LeaveRequest[]
+  payslips      Payslip[]
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  HALF_DAY
+  ON_LEAVE
+}
+
+model Attendance {
+  id         String           @id @default(cuid())
+  employeeId String
+  employee   Employee         @relation(fields: [employeeId], references: [id])
+  date       DateTime         @db.Date
+  checkIn    DateTime?
+  checkOut   DateTime?
+  status     AttendanceStatus @default(PRESENT)
+  notes      String?
+
+  @@unique([employeeId, date])
+}
+
+model LeaveType {
+  id          String         @id @default(cuid())
+  name        String         @unique
+  daysPerYear Int            @default(0)
+  isPaid      Boolean        @default(true)
+  requests    LeaveRequest[]
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+model LeaveRequest {
+  id           String      @id @default(cuid())
+  employeeId   String
+  employee     Employee    @relation(fields: [employeeId], references: [id])
+  leaveTypeId  String
+  leaveType    LeaveType   @relation(fields: [leaveTypeId], references: [id])
+  startDate    DateTime    @db.Date
+  endDate      DateTime    @db.Date
+  days         Decimal     @db.Decimal(5, 1)
+  reason       String?
+  status       LeaveStatus @default(PENDING)
+  approvedById String?
+  approvedBy   User?       @relation("LeaveApprover", fields: [approvedById], references: [id])
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+}
+
+enum PayrollStatus {
+  DRAFT
+  APPROVED
+  PAID
+}
+
+model PayrollRun {
+  id              String        @id @default(cuid())
+  number          String        @unique
+  periodStart     DateTime      @db.Date
+  periodEnd       DateTime      @db.Date
+  payDate         DateTime      @db.Date
+  status          PayrollStatus @default(DRAFT)
+  totalGross      Decimal       @default(0) @db.Decimal(18, 2)
+  totalDeductions Decimal       @default(0) @db.Decimal(18, 2)
+  totalNet        Decimal       @default(0) @db.Decimal(18, 2)
+  journalEntryId  String?       @unique
+  paymentEntryId  String?       @unique
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  payslips Payslip[]
+}
+
+model Payslip {
+  id             String     @id @default(cuid())
+  runId          String
+  run            PayrollRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  employeeId     String
+  employee       Employee   @relation(fields: [employeeId], references: [id])
+  baseSalary     Decimal    @db.Decimal(18, 2)
+  allowances     Decimal    @default(0) @db.Decimal(18, 2)
+  overtime       Decimal    @default(0) @db.Decimal(18, 2)
+  unpaidLeaveDeduction Decimal @default(0) @db.Decimal(18, 2)
+  otherDeductions Decimal   @default(0) @db.Decimal(18, 2)
+  taxAmount      Decimal    @default(0) @db.Decimal(18, 2)
+  grossPay       Decimal    @db.Decimal(18, 2)
+  netPay         Decimal    @db.Decimal(18, 2)
+
+  @@unique([runId, employeeId])
+}
