@@ -79,7 +79,14 @@ async function main() {
   const adminPassword = process.env.SEED_ADMIN_PASSWORD ?? 'Admin@12345';
   await prisma.user.upsert({
     where: { email: adminEmail },
-    create: { email: adminEmail, name: 'Administrator', role: Role.ADMIN, passwordHash: await bcrypt.hash(adminPassword, 10) },
+    create: {
+      email: adminEmail,
+      name: 'Administrator',
+      role: Role.ADMIN,
+      passwordHash: await bcrypt.hash(adminPassword, 10),
+      // The default password is public (it's in the README), so force a change on first login.
+      mustChangePassword: process.env.SEED_FORCE_PASSWORD_CHANGE !== 'false',
+    },
     update: {},
   });
 

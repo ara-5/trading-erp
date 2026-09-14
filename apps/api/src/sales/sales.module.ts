@@ -1,5 +1,7 @@
-import { BadRequestException, Body, Controller, Get, Injectable, Module, Param, Patch, Post, Put, Query } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Injectable, Module, Param, Patch, Post, Put, Query, Res } from '@nestjs/common';
 import { InvoiceStatus, LeadStatus, Prisma, QuotationStatus, Role, SalesOrderStatus } from '@prisma/client';
+import type { Response } from 'express';
+import { linesTable, PdfService, pdfResponse } from '../common/pdf.service';
 import { z } from 'zod';
 import { AccountingModule } from '../accounting/accounting.module';
 import { LedgerService } from '../accounting/ledger.service';
@@ -81,6 +83,7 @@ export class SalesService {
     private readonly stock: StockService,
     private readonly ledger: LedgerService,
     private readonly audit: AuditService,
+    private readonly pdf: PdfService,
   ) {}
 
   /** Fills default price/tax from the product master and computes line and document totals. */
@@ -421,7 +424,7 @@ export class SalesService {
     });
   }
 
-  invoiceFromOrder(user: AuthUser, id: string) {
+  invoiceFromOrder(user: AuthUser, id: string, invoiceDate?: Date) {
     return this.prisma.$transaction(async (tx) => {
       const so = await tx.salesOrder.findUniqueOrThrow({ where: { id }, include: { customer: true, lines: { include: { product: true } } } });
       if (so.status === 'DRAFT' || so.status === 'CANCELLED') throw new BadRequestException('Confirm the order before invoicing');
@@ -433,7 +436,7 @@ export class SalesService {
           return { productId: l.productId, description: l.description ?? l.product.name, ...base, ...computeLine(base) };
         });
       if (!lines.length) throw new BadRequestException('Nothing to invoice: deliver goods first');
-      const date = new Date();
+      const date = invoiceDate ?? new Date();
       const invoice = await tx.salesInvoice.create({
         data: {
           number: await this.seq.next(tx, 'INV'),
@@ -556,6 +559,7 @@ export class SalesService {
         return { deleted: true };
       }
       if (inv.status !== 'POSTED') throw new BadRequestException('Only unpaid posted invoices can be voided');
+      await this.ledger.assertOpenPeriod(tx, inv.date);
       if (inv.salesOrderId) {
         const so = await tx.salesOrder.findUniqueOrThrow({ where: { id: inv.salesOrderId }, include: { lines: true } });
         const used = new Map<string, Decimal>();
@@ -569,6 +573,59 @@ export class SalesService {
       await this.audit.log(user.sub, 'void', 'SalesInvoice', id, undefined, tx);
       return tx.salesInvoice.update({ where: { id }, data: { status: 'VOID' } });
     });
+  }
+
+  // ── PDFs ──
+
+  async invoicePdf(id: string) {
+    const inv = await this.getInvoice(id);
+    const buffer = await this.pdf.render((f) => ({
+      title: 'Invoice',
+      number: inv.number,
+      status: inv.status === 'DRAFT' ? 'Draft' : undefined,
+      party: { label: 'Bill to', name: inv.customer.name, lines: [inv.customer.address, inv.customer.email, inv.customer.taxNumber && `Tax no. ${inv.customer.taxNumber}`] },
+      meta: [
+        ['Invoice date', f.date(inv.date)],
+        ['Due date', f.date(inv.dueDate)],
+        ...(inv.salesOrder ? [['Sales order', inv.salesOrder.number] as [string, string]] : []),
+        ['Balance due', f.money(D(inv.total).minus(inv.amountPaid))],
+      ],
+      ...linesTable(inv.lines, f),
+      totals: [
+        ['Subtotal', f.money(inv.subtotal)],
+        ['Tax', f.money(inv.taxTotal)],
+        ['Total', f.money(inv.total), true],
+        ...(D(inv.amountPaid).gt(0)
+          ? ([
+              ['Paid', f.money(inv.amountPaid)],
+              ['Balance due', f.money(D(inv.total).minus(inv.amountPaid)), true],
+            ] as [string, string, boolean?][])
+          : []),
+      ],
+      notes: inv.notes,
+    }));
+    return { buffer, filename: `${inv.number}.pdf` };
+  }
+
+  async quotationPdf(id: string) {
+    const q = await this.getQuotation(id);
+    const buffer = await this.pdf.render((f) => ({
+      title: 'Quotation',
+      number: q.number,
+      party: { label: 'Prepared for', name: q.customer.name, lines: [q.customer.address, q.customer.email] },
+      meta: [
+        ['Date', f.date(q.date)],
+        ['Valid until', f.date(q.validUntil)],
+      ],
+      ...linesTable(q.lines, f),
+      totals: [
+        ['Subtotal', f.money(q.subtotal)],
+        ['Tax', f.money(q.taxTotal)],
+        ['Total', f.money(q.total), true],
+      ],
+      notes: q.notes,
+    }));
+    return { buffer, filename: `${q.number}.pdf` };
   }
 }
 
@@ -716,8 +773,8 @@ export class SalesController {
   }
 
   @Post('orders/:id/invoice')
-  invoiceFromOrder(@CurrentUser() u: AuthUser, @Param('id') id: string) {
-    return this.svc.invoiceFromOrder(u, id);
+  invoiceFromOrder(@CurrentUser() u: AuthUser, @Param('id') id: string, @Body(new ZodPipe(z.object({ date: zDate.optional() }))) body: { date?: Date }) {
+    return this.svc.invoiceFromOrder(u, id, body.date);
   }
 
   @Get('invoices')
@@ -728,6 +785,18 @@ export class SalesController {
   @Get('invoices/:id')
   getInvoice(@Param('id') id: string) {
     return this.svc.getInvoice(id);
+  }
+
+  @Get('invoices/:id/pdf')
+  async invoicePdf(@Param('id') id: string, @Res({ passthrough: true }) res: Response) {
+    const { buffer, filename } = await this.svc.invoicePdf(id);
+    return pdfResponse(res, buffer, filename);
+  }
+
+  @Get('quotations/:id/pdf')
+  async quotationPdf(@Param('id') id: string, @Res({ passthrough: true }) res: Response) {
+    const { buffer, filename } = await this.svc.quotationPdf(id);
+    return pdfResponse(res, buffer, filename);
   }
 
   @Post('invoices')

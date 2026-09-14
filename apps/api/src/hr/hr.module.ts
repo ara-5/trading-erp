@@ -1,5 +1,7 @@
-import { BadRequestException, Body, Controller, Delete, Get, Injectable, Module, Param, Patch, Post, Put, Query } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, Injectable, Module, Param, Patch, Post, Put, Query, Res } from '@nestjs/common';
 import { AttendanceStatus, EmployeeStatus, LeaveStatus, PayrollStatus, Prisma, Role } from '@prisma/client';
+import type { Response } from 'express';
+import { PdfService, pdfResponse } from '../common/pdf.service';
 import { z } from 'zod';
 import { AccountingModule } from '../accounting/accounting.module';
 import { LedgerService } from '../accounting/ledger.service';
@@ -65,6 +67,7 @@ export class HrService {
     private readonly seq: SequenceService,
     private readonly ledger: LedgerService,
     private readonly audit: AuditService,
+    private readonly pdf: PdfService,
   ) {}
 
   // ── Employees ──
@@ -239,6 +242,44 @@ export class HrService {
         },
       },
     });
+  }
+
+  async payslipPdf(runId: string, payslipId: string) {
+    const slip = await this.prisma.payslip.findUniqueOrThrow({
+      where: { id: payslipId },
+      include: { run: true, employee: { include: { department: true } } },
+    });
+    if (slip.runId !== runId) throw new BadRequestException('Payslip does not belong to this run');
+    const e = slip.employee;
+    const deductions = D(slip.taxAmount).plus(slip.otherDeductions);
+    const buffer = await this.pdf.render((f) => ({
+      title: 'Payslip',
+      number: slip.run.number,
+      status: slip.run.status === 'DRAFT' ? 'Draft — not approved' : undefined,
+      party: { label: 'Employee', name: `${e.firstName} ${e.lastName}`, lines: [e.code, e.jobTitle, e.department?.name, e.bankAccount && `Bank account ${e.bankAccount}`] },
+      meta: [
+        ['Pay period', `${f.date(slip.run.periodStart)} – ${f.date(slip.run.periodEnd)}`],
+        ['Pay date', f.date(slip.run.payDate)],
+      ],
+      columns: [
+        { header: 'Description', width: 349 },
+        { header: 'Amount', width: 150, align: 'right' },
+      ],
+      rows: [
+        { cells: ['Base salary', f.money(slip.baseSalary)] },
+        { cells: ['Allowances', f.money(slip.allowances)] },
+        { cells: ['Overtime', f.money(slip.overtime)] },
+        { cells: ['Unpaid leave deduction', `−${f.money(slip.unpaidLeaveDeduction)}`] },
+        { cells: [`Income tax (${f.pct(e.taxRatePct)})`, `−${f.money(slip.taxAmount)}`] },
+        { cells: ['Other deductions', `−${f.money(slip.otherDeductions)}`] },
+      ],
+      totals: [
+        ['Gross pay', f.money(slip.grossPay)],
+        ['Total deductions', f.money(deductions)],
+        ['Net pay', f.money(slip.netPay), true],
+      ],
+    }));
+    return { buffer, filename: `${slip.run.number}-${e.code}.pdf` };
   }
 
   private computeSlip(p: { baseSalary: Decimal; allowances: Decimal; overtime: Decimal; unpaidLeaveDeduction: Decimal; otherDeductions: Decimal; taxRatePct: Decimal }) {
@@ -472,6 +513,12 @@ export class HrController {
   @Get('payroll/:id')
   getRun(@Param('id') id: string) {
     return this.svc.getRun(id);
+  }
+
+  @Get('payroll/:id/payslips/:payslipId/pdf')
+  async payslipPdf(@Param('id') id: string, @Param('payslipId') payslipId: string, @Res({ passthrough: true }) res: Response) {
+    const { buffer, filename } = await this.svc.payslipPdf(id, payslipId);
+    return pdfResponse(res, buffer, filename);
   }
 
   @Post('payroll')

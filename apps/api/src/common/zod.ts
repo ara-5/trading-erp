@@ -3,7 +3,8 @@ import { z, ZodTypeAny } from 'zod';
 
 @Injectable()
 export class ZodPipe<T extends ZodTypeAny> implements PipeTransform {
-  constructor(private readonly schema: T) {}
+  /** Public so the OpenAPI generator can derive request schemas from it. */
+  constructor(readonly schema: T) {}
 
   transform(value: unknown): z.infer<T> {
     const result = this.schema.safeParse(value);

@@ -4,7 +4,7 @@ import * as bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import { AuditService } from '../common/common.module';
 import { AuthUser, CurrentUser, Roles } from '../common/auth';
-import { listQuerySchema, ListQuery, pageArgs, paged, zOptStr, ZodPipe } from '../common/zod';
+import { listQuerySchema, ListQuery, pageArgs, paged, zDate, zOptStr, ZodPipe } from '../common/zod';
 import { PrismaService } from '../prisma/prisma.service';
 
 const userCreateSchema = z.object({
@@ -28,6 +28,7 @@ const settingsSchema = z.object({
   address: zOptStr,
   currency: z.string().trim().length(3).toUpperCase(),
   fiscalYearStart: z.coerce.number().int().min(1).max(12),
+  lockDate: zDate.nullish(),
 });
 const systemAccountsSchema = z.record(z.nativeEnum(SystemAccountKey), z.string().min(1));
 
@@ -54,7 +55,8 @@ export class AdminService {
   async createUser(actor: AuthUser, dto: z.infer<typeof userCreateSchema>) {
     const { password, ...rest } = dto;
     const user = await this.prisma.user.create({
-      data: { ...rest, passwordHash: await bcrypt.hash(password, 10) },
+      // Admin-set passwords are temporary: the user must pick their own on first login.
+      data: { ...rest, passwordHash: await bcrypt.hash(password, 10), mustChangePassword: true },
       select: userSelect,
     });
     await this.audit.log(actor.sub, 'create', 'User', user.id, { email: user.email, role: user.role });
@@ -65,9 +67,13 @@ export class AdminService {
     const { password, ...rest } = dto;
     const user = await this.prisma.user.update({
       where: { id },
-      data: { ...rest, ...(password ? { passwordHash: await bcrypt.hash(password, 10) } : {}) },
+      data: { ...rest, ...(password ? { passwordHash: await bcrypt.hash(password, 10), mustChangePassword: true } : {}) },
       select: userSelect,
     });
+    if (password || rest.isActive === false || rest.role) {
+      // End existing sessions so the change takes effect immediately.
+      await this.prisma.refreshToken.updateMany({ where: { userId: id, revokedAt: null }, data: { revokedAt: new Date() } });
+    }
     await this.audit.log(actor.sub, 'update', 'User', id, rest);
     return user;
   }

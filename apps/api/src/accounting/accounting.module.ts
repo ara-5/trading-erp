@@ -8,6 +8,8 @@ import { D, round2 } from '../common/money';
 import { contains, listQuerySchema, pageArgs, paged, zDate, zId, zMoney, zOptStr, zPct, ZodPipe } from '../common/zod';
 import { PrismaService } from '../prisma/prisma.service';
 import { LedgerService, naturalBalance } from './ledger.service';
+import { BankingController, BankingService } from './banking';
+import { ClosingController, ClosingService } from './closing';
 import { PaymentsController, PaymentsService } from './payments';
 import { ReportsController, ReportsService } from './reports';
 
@@ -187,6 +189,7 @@ export class JournalService {
     return this.prisma.$transaction(async (tx) => {
       const entry = await tx.journalEntry.findUniqueOrThrow({ where: { id }, include: { lines: { include: { account: true } } } });
       if (entry.status !== 'DRAFT') throw new BadRequestException('Entry is not a draft');
+      await this.ledger.assertOpenPeriod(tx, entry.date);
       const inactive = entry.lines.find((l) => !l.account.isActive);
       if (inactive) throw new BadRequestException(`Account ${inactive.account.code} is inactive`);
       this.ledger.assertBalanced(entry.lines.map((l) => ({ debit: D(l.debit), credit: D(l.credit) })));
@@ -200,6 +203,10 @@ export class JournalService {
     const entry = await this.prisma.journalEntry.findUniqueOrThrow({ where: { id } });
     if (entry.status !== 'POSTED' || entry.sourceType !== 'MANUAL') {
       throw new BadRequestException('Only posted manual entries can be voided here; void the source document instead');
+    }
+    await this.ledger.assertOpenPeriod(this.prisma, entry.date);
+    if (await this.prisma.bankStatementLine.count({ where: { journalLine: { entryId: id } } })) {
+      throw new BadRequestException('This entry is reconciled with a bank statement line; unmatch it first');
     }
     const voided = await this.prisma.journalEntry.update({ where: { id }, data: { status: 'VOID' } });
     await this.audit.log(user.sub, 'void', 'JournalEntry', id);
@@ -314,8 +321,8 @@ export class AccountingController {
 }
 
 @Module({
-  controllers: [AccountingController, PaymentsController, ReportsController],
-  providers: [LedgerService, AccountsService, JournalService, PaymentsService, ReportsService],
+  controllers: [AccountingController, PaymentsController, ReportsController, ClosingController, BankingController],
+  providers: [LedgerService, AccountsService, JournalService, PaymentsService, ReportsService, ClosingService, BankingService],
   exports: [LedgerService, ReportsService],
 })
 export class AccountingModule {}

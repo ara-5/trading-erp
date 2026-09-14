@@ -2,6 +2,7 @@ import { Controller, Get, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtModule, JwtSignOptions } from '@nestjs/jwt';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { AccountingModule } from './accounting/accounting.module';
 import { AdminModule } from './admin/admin.module';
 import { AuthModule } from './auth/auth.module';
@@ -19,7 +20,7 @@ class HealthController {
   @Public()
   @Get()
   health() {
-    return { status: 'ok', time: new Date().toISOString() };
+    return { status: 'ok', demo: process.env.DEMO_MODE === 'true', time: new Date().toISOString() };
   }
 }
 
@@ -31,9 +32,11 @@ class HealthController {
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
         secret: config.getOrThrow<string>('JWT_SECRET'),
-        signOptions: { expiresIn: config.get('JWT_EXPIRES_IN', '12h') as JwtSignOptions['expiresIn'] },
+        signOptions: { expiresIn: config.get('ACCESS_TOKEN_TTL', '15m') as JwtSignOptions['expiresIn'] },
       }),
     }),
+    // Generous global limit per client IP; login has its own stricter limit.
+    ThrottlerModule.forRoot([{ name: 'default', ttl: 60_000, limit: () => Number(process.env.RATE_LIMIT ?? 600) }]),
     PrismaModule,
     CommonModule,
     AuthModule,
@@ -46,6 +49,9 @@ class HealthController {
     DashboardModule,
   ],
   controllers: [HealthController],
-  providers: [{ provide: APP_GUARD, useClass: AuthGuard }],
+  providers: [
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_GUARD, useClass: AuthGuard },
+  ],
 })
 export class AppModule {}

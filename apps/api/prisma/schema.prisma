@@ -26,6 +26,7 @@ model User {
   passwordHash String
   role         Role     @default(VIEWER)
   isActive     Boolean  @default(true)
+  mustChangePassword Boolean @default(false)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -33,6 +34,22 @@ model User {
   leads          Lead[]
   auditLogs      AuditLog[]
   approvedLeaves LeaveRequest[] @relation("LeaveApprover")
+  refreshTokens  RefreshToken[]
+}
+
+/// Opaque refresh tokens (stored hashed) with rotation; a reused revoked token revokes the whole family.
+model RefreshToken {
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash    String    @unique
+  expiresAt    DateTime
+  revokedAt    DateTime?
+  replacedById String?
+  userAgent    String?
+  createdAt    DateTime  @default(now())
+
+  @@index([userId])
 }
 
 model CompanySettings {
@@ -45,6 +62,7 @@ model CompanySettings {
   address         String?
   currency        String   @default("USD")
   fiscalYearStart Int      @default(1) // month 1-12
+  lockDate        DateTime? @db.Date // postings dated on or before this are rejected
   updatedAt       DateTime @updatedAt
 }
 
@@ -95,6 +113,7 @@ model Account {
   systemAccounts SystemAccount[]
   payments       Payment[]
   billLines      PurchaseBillLine[]
+  statementLines BankStatementLine[]
 }
 
 /// Maps logical roles (e.g. accounts receivable) to concrete GL accounts used by automatic postings.
@@ -135,6 +154,7 @@ enum SourceType {
   PAYMENT
   PAYROLL
   STOCK
+  CLOSING
 }
 
 model JournalEntry {
@@ -165,6 +185,8 @@ model JournalLine {
   debit       Decimal      @default(0) @db.Decimal(18, 2)
   credit      Decimal      @default(0) @db.Decimal(18, 2)
   description String?
+
+  statementLine BankStatementLine?
 
   @@index([accountId])
 }
@@ -210,7 +232,45 @@ model Payment {
   purchaseBillId String?
   purchaseBill   PurchaseBill?    @relation(fields: [purchaseBillId], references: [id])
   journalEntryId String?          @unique
+  voidedAt       DateTime?
+  voidReason     String?
   createdAt      DateTime         @default(now())
+}
+
+/// One row per closed fiscal year; the closing entry moves income/expense balances into retained earnings.
+model FiscalYearClose {
+  id             String   @id @default(cuid())
+  year           Int      @unique // the calendar year in which the fiscal year starts
+  startDate      DateTime @db.Date
+  endDate        DateTime @db.Date
+  netIncome      Decimal  @db.Decimal(18, 2)
+  journalEntryId String   @unique
+  closedById     String?
+  closedAt       DateTime @default(now())
+}
+
+enum StatementLineStatus {
+  UNMATCHED
+  MATCHED
+  IGNORED
+}
+
+/// A line imported from a bank statement, reconciled against a posted journal line on the same account.
+model BankStatementLine {
+  id            String              @id @default(cuid())
+  accountId     String
+  account       Account             @relation(fields: [accountId], references: [id])
+  date          DateTime            @db.Date
+  description   String
+  reference     String?
+  amount        Decimal             @db.Decimal(18, 2) // positive = money in
+  status        StatementLineStatus @default(UNMATCHED)
+  journalLineId String?             @unique
+  journalLine   JournalLine?        @relation(fields: [journalLineId], references: [id])
+  importBatch   String
+  createdAt     DateTime            @default(now())
+
+  @@index([accountId, date])
 }
 
 // ───────────────────────────── Inventory ──────────────────────────────

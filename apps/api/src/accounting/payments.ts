@@ -34,6 +34,8 @@ const paymentSchema = z
   });
 type PaymentDto = z.infer<typeof paymentSchema>;
 
+const voidSchema = z.object({ reason: z.string().trim().min(1).max(500) });
+
 const paymentQuerySchema = listQuerySchema.extend({
   direction: z.nativeEnum(PaymentDirection).optional(),
   customerId: z.string().optional(),
@@ -143,6 +145,35 @@ export class PaymentsService {
     });
   }
 
+  /** Reverses a payment: reopens the invoice/bill balance and voids its journal entry. */
+  void(user: AuthUser, id: string, reason: string) {
+    return this.prisma.$transaction(async (tx) => {
+      const payment = await tx.payment.findUniqueOrThrow({ where: { id } });
+      if (payment.voidedAt) throw new BadRequestException('Payment is already voided');
+      await this.ledger.assertOpenPeriod(tx, payment.date);
+      if (payment.journalEntryId && (await tx.bankStatementLine.count({ where: { journalLine: { entryId: payment.journalEntryId } } }))) {
+        throw new BadRequestException('Payment is reconciled with a bank statement line; unmatch it first');
+      }
+
+      const reopen = (total: Prisma.Decimal, paid: Prisma.Decimal) => {
+        const remaining = paid.minus(payment.amount);
+        return { amountPaid: remaining, status: remaining.lte(0) ? ('POSTED' as const) : ('PARTIALLY_PAID' as const) };
+      };
+      if (payment.salesInvoiceId) {
+        const inv = await tx.salesInvoice.findUniqueOrThrow({ where: { id: payment.salesInvoiceId } });
+        await tx.salesInvoice.update({ where: { id: inv.id }, data: reopen(D(inv.total), D(inv.amountPaid)) });
+      }
+      if (payment.purchaseBillId) {
+        const bill = await tx.purchaseBill.findUniqueOrThrow({ where: { id: payment.purchaseBillId } });
+        await tx.purchaseBill.update({ where: { id: bill.id }, data: reopen(D(bill.total), D(bill.amountPaid)) });
+      }
+      if (payment.journalEntryId) await tx.journalEntry.update({ where: { id: payment.journalEntryId }, data: { status: 'VOID' } });
+
+      await this.audit.log(user.sub, 'void', 'Payment', id, { reason }, tx);
+      return tx.payment.update({ where: { id }, data: { voidedAt: new Date(), voidReason: reason } });
+    });
+  }
+
   private applyAmount(total: Prisma.Decimal, alreadyPaid: Prisma.Decimal, amount: Prisma.Decimal) {
     const outstanding = total.minus(alreadyPaid);
     if (amount.gt(outstanding)) throw new BadRequestException(`Amount exceeds the outstanding balance of ${outstanding.toFixed(2)}`);
@@ -174,5 +205,10 @@ export class PaymentsController {
   @Post()
   create(@CurrentUser() u: AuthUser, @Body(new ZodPipe(paymentSchema)) dto: PaymentDto) {
     return this.svc.create(u, dto);
+  }
+
+  @Post(':id/void')
+  void(@CurrentUser() u: AuthUser, @Param('id') id: string, @Body(new ZodPipe(voidSchema)) body: z.infer<typeof voidSchema>) {
+    return this.svc.void(u, id, body.reason);
   }
 }

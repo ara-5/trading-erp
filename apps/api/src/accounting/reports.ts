@@ -17,12 +17,15 @@ const sum = (rows: { balance: Decimal }[]) => rows.reduce((s, r) => s.plus(r.bal
 export class ReportsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  private async balances(from?: Date, to?: Date) {
+  /** `excludeClosing` hides year-end closing entries, which would otherwise zero out a closed year's P&L. */
+  private async balances(from?: Date, to?: Date, excludeClosing = false) {
     const [accounts, sums] = await Promise.all([
       this.prisma.account.findMany({ orderBy: { code: 'asc' } }),
       this.prisma.journalLine.groupBy({
         by: ['accountId'],
-        where: { entry: { status: 'POSTED', date: { gte: from, lte: to && endOfDay(to) } } },
+        where: {
+          entry: { status: 'POSTED', date: { gte: from, lte: to && endOfDay(to) }, ...(excludeClosing && { sourceType: { not: 'CLOSING' as const } }) },
+        },
         _sum: { debit: true, credit: true },
       }),
     ]);
@@ -51,7 +54,7 @@ export class ReportsService {
   }
 
   async profitLoss(from: Date, to: Date) {
-    const rows = (await this.balances(from, to)).filter((r) => !r.balance.isZero());
+    const rows = (await this.balances(from, to, true)).filter((r) => !r.balance.isZero());
     const income = rows.filter((r) => r.type === AccountType.INCOME);
     const expenses = rows.filter((r) => r.type === AccountType.EXPENSE);
     const totalIncome = sum(income);

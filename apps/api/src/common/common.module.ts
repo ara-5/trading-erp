@@ -1,6 +1,7 @@
 import { Global, Injectable, Module } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService, Tx } from '../prisma/prisma.service';
+import { PdfService } from './pdf.service';
 
 @Injectable()
 export class SequenceService {
@@ -41,7 +42,7 @@ export class AuditService {
 
 @Global()
 @Module({
-  providers: [SequenceService, AuditService],
-  exports: [SequenceService, AuditService],
+  providers: [SequenceService, AuditService, PdfService],
+  exports: [SequenceService, AuditService, PdfService],
 })
 export class CommonModule {}

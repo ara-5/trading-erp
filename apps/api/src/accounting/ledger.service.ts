@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { AccountType, SourceType, SystemAccountKey } from '@prisma/client';
 import { SequenceService } from '../common/common.module';
+import { startOfDay } from '../common/dates';
 import { D, Decimal, round2, ZERO } from '../common/money';
 import { Tx } from '../prisma/prisma.service';
 
@@ -42,7 +43,16 @@ export class LedgerService {
     return row.accountId;
   }
 
+  /** Rejects any change dated inside a closed/locked period. */
+  async assertOpenPeriod(tx: Tx, date: Date) {
+    const settings = await tx.companySettings.findUnique({ where: { id: 1 }, select: { lockDate: true } });
+    if (settings?.lockDate && startOfDay(date) <= settings.lockDate) {
+      throw new BadRequestException(`The books are locked through ${settings.lockDate.toISOString().slice(0, 10)}; use a later date`);
+    }
+  }
+
   async post(tx: Tx, input: PostingInput) {
+    await this.assertOpenPeriod(tx, input.date);
     const lines = await Promise.all(
       input.lines
         .map((l) => ({ ...l, debit: round2(D(l.debit)), credit: round2(D(l.credit)) }))

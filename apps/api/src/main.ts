@@ -1,19 +1,20 @@
 import 'reflect-metadata';
 import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
-import { PrismaExceptionFilter } from './common/prisma-exception.filter';
+import { API_PREFIX, configureApp } from './bootstrap';
+import { setupSwagger } from './common/swagger';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
-  app.setGlobalPrefix('api');
-  app.enableCors({ origin: (process.env.CORS_ORIGIN ?? 'http://localhost:3000').split(','), credentials: true });
-  app.useGlobalFilters(new PrismaExceptionFilter());
+  const app = configureApp(await NestFactory.create<NestExpressApplication>(AppModule));
   app.enableShutdownHooks();
+  if (process.env.SWAGGER !== 'false') setupSwagger(app, API_PREFIX);
 
   const port = Number(process.env.PORT ?? 3001);
   await app.listen(port);
-  Logger.log(`ERP API listening on http://localhost:${port}/api`, 'Bootstrap');
+  Logger.log(`ERP API listening on http://localhost:${port}/${API_PREFIX} (docs at /${API_PREFIX}/docs)`, 'Bootstrap');
+  if (process.env.DEMO_MODE === 'true') Logger.warn('DEMO_MODE is on: all write requests are rejected', 'Bootstrap');
 }
 
 void bootstrap();

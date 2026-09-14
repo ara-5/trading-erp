@@ -1,5 +1,7 @@
-import { BadRequestException, Body, Controller, Get, Injectable, Module, Param, Patch, Post, Put, Query } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Injectable, Module, Param, Patch, Post, Put, Query, Res } from '@nestjs/common';
 import { BillStatus, Prisma, PurchaseOrderStatus, Role } from '@prisma/client';
+import type { Response } from 'express';
+import { linesTable, PdfService, pdfResponse } from '../common/pdf.service';
 import { z } from 'zod';
 import { AccountingModule } from '../accounting/accounting.module';
 import { LedgerService, PostingLine } from '../accounting/ledger.service';
@@ -81,6 +83,7 @@ export class PurchasingService {
     private readonly stock: StockService,
     private readonly ledger: LedgerService,
     private readonly audit: AuditService,
+    private readonly pdf: PdfService,
   ) {}
 
   // ── Suppliers ──
@@ -277,7 +280,31 @@ export class PurchasingService {
     });
   }
 
-  billFromOrder(user: AuthUser, id: string) {
+  async orderPdf(id: string) {
+    const po = await this.getOrder(id);
+    const buffer = await this.pdf.render((f) => ({
+      title: 'Purchase Order',
+      number: po.number,
+      status: po.status === 'DRAFT' ? 'Draft — not approved' : undefined,
+      party: { label: 'Supplier', name: po.supplier.name, lines: [po.supplier.address, po.supplier.email, po.supplier.phone] },
+      meta: [
+        ['Order date', f.date(po.date)],
+        ['Expected', f.date(po.expectedDate)],
+        ['Deliver to', po.warehouse.name],
+        ['Payment terms', `${po.supplier.paymentTermsDays} days`],
+      ],
+      ...linesTable(po.lines, f),
+      totals: [
+        ['Subtotal', f.money(po.subtotal)],
+        ['Tax', f.money(po.taxTotal)],
+        ['Total', f.money(po.total), true],
+      ],
+      notes: po.notes,
+    }));
+    return { buffer, filename: `${po.number}.pdf` };
+  }
+
+  billFromOrder(user: AuthUser, id: string, billDate?: Date) {
     return this.prisma.$transaction(async (tx) => {
       const po = await tx.purchaseOrder.findUniqueOrThrow({ where: { id }, include: { supplier: true, lines: { include: { product: true } } } });
       const lines = po.lines
@@ -288,7 +315,7 @@ export class PurchasingService {
           return { productId: l.productId, description: l.description ?? l.product.name, ...base, ...computeLine(base) };
         });
       if (!lines.length) throw new BadRequestException('There are no received, unbilled quantities on this order');
-      const date = new Date();
+      const date = billDate ?? new Date();
       const bill = await tx.purchaseBill.create({
         data: {
           number: await this.seq.next(tx, 'BILL'),
@@ -465,6 +492,7 @@ export class PurchasingService {
         return { deleted: true };
       }
       if (bill.status !== 'POSTED') throw new BadRequestException('Only unpaid posted bills can be voided');
+      await this.ledger.assertOpenPeriod(tx, bill.date);
       if (bill.purchaseOrderId) {
         const po = await tx.purchaseOrder.findUniqueOrThrow({ where: { id: bill.purchaseOrderId }, include: { lines: true } });
         const used = new Map<string, Decimal>();
@@ -516,6 +544,12 @@ export class PurchasingController {
     return this.svc.getOrder(id);
   }
 
+  @Get('orders/:id/pdf')
+  async orderPdf(@Param('id') id: string, @Res({ passthrough: true }) res: Response) {
+    const { buffer, filename } = await this.svc.orderPdf(id);
+    return pdfResponse(res, buffer, filename);
+  }
+
   @Roles(Role.PURCHASING)
   @Post('orders')
   createOrder(@CurrentUser() u: AuthUser, @Body(new ZodPipe(poSchema)) dto: PoDto) {
@@ -548,8 +582,8 @@ export class PurchasingController {
 
   @Roles(Role.ACCOUNTANT, Role.PURCHASING)
   @Post('orders/:id/bill')
-  billFromOrder(@CurrentUser() u: AuthUser, @Param('id') id: string) {
-    return this.svc.billFromOrder(u, id);
+  billFromOrder(@CurrentUser() u: AuthUser, @Param('id') id: string, @Body(new ZodPipe(z.object({ date: zDate.optional() }))) body: { date?: Date }) {
+    return this.svc.billFromOrder(u, id, body.date);
   }
 
   @Get('bills')
