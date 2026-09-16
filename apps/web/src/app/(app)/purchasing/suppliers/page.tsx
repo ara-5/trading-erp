@@ -27,7 +27,7 @@ export default function SuppliersPage() {
         }
         columns={[
           { key: 'code', header: 'Code', cell: (s) => <span className="font-mono text-xs">{s.code}</span> },
-          { key: 'name', header: 'Name', cell: (s) => <span className="font-medium text-slate-900">{s.name}</span> },
+          { key: 'name', header: 'Name', cell: (s) => <span className="font-medium text-slate-900 dark:text-slate-100">{s.name}</span> },
           { key: 'email', header: 'Email', cell: (s) => s.email ?? '—' },
           { key: 'phone', header: 'Phone', cell: (s) => s.phone ?? '—' },
           { key: 'terms', header: 'Terms', cell: (s) => `${s.paymentTermsDays} days` },

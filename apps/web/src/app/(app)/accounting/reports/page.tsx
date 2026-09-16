@@ -45,12 +45,12 @@ export default function ReportsPage() {
           </Button>
         }
       />
-      <div className="mb-4 flex flex-wrap gap-1 rounded-lg bg-white p-1 shadow-sm ring-1 ring-slate-200">
+      <div className="mb-4 flex flex-wrap gap-1 rounded-lg bg-white dark:bg-slate-900 p-1 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
         {TABS.map(([key, label]) => (
           <button
             key={key}
             onClick={() => setTab(key)}
-            className={cn('rounded-md px-3 py-1.5 text-sm font-medium', tab === key ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:bg-slate-100')}
+            className={cn('rounded-md px-3 py-1.5 text-sm font-medium', tab === key ? 'bg-indigo-600 text-white' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800')}
           >
             {label}
           </button>
@@ -76,7 +76,7 @@ export default function ReportsPage() {
       {tab === 'tb' && <TrialBalance asOf={to} />}
       {tab === 'ar' && <Aging kind="receivables" asOf={to} />}
       {tab === 'ap' && <Aging kind="payables" asOf={to} />}
-      {tab === 'ledger' && (accountId ? <Ledger accountId={accountId} from={from} to={to} /> : <p className="text-sm text-slate-500">Choose an account to view its ledger.</p>)}
+      {tab === 'ledger' && (accountId ? <Ledger accountId={accountId} from={from} to={to} /> : <p className="text-sm text-slate-500 dark:text-slate-400">Choose an account to view its ledger.</p>)}
     </>
   );
 }
@@ -100,15 +100,15 @@ function AccountPicker({ value, onChange }: { value: string; onChange: (v: strin
 function Section({ title, rows, total, totalLabel }: { title: string; rows: Row[]; total: string | number; totalLabel: string }) {
   return (
     <div className="mb-6">
-      <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">{title}</h3>
+      <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{title}</h3>
       <table className="w-full text-sm">
-        <tbody className="divide-y divide-slate-100">
+        <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
           {rows.map((r) => (
             <tr key={r.id}>
               <td className="py-1.5">
                 {/* Full navigation so the page re-reads its tab/account from the URL. */}
-                <a href={`/accounting/reports?tab=ledger&accountId=${r.id}`} className="text-slate-700 hover:text-indigo-600">
-                  <span className="mr-2 font-mono text-xs text-slate-400">{r.code}</span>
+                <a href={`/accounting/reports?tab=ledger&accountId=${r.id}`} className="text-slate-700 dark:text-slate-300 hover:text-indigo-600">
+                  <span className="mr-2 font-mono text-xs text-slate-400 dark:text-slate-500">{r.code}</span>
                   {r.name}
                 </a>
               </td>
@@ -117,12 +117,12 @@ function Section({ title, rows, total, totalLabel }: { title: string; rows: Row[
           ))}
           {rows.length === 0 && (
             <tr>
-              <td className="py-1.5 text-slate-400" colSpan={2}>
+              <td className="py-1.5 text-slate-400 dark:text-slate-500" colSpan={2}>
                 No activity
               </td>
             </tr>
           )}
-          <tr className="font-semibold text-slate-900">
+          <tr className="font-semibold text-slate-900 dark:text-slate-100">
             <td className="pt-2">{totalLabel}</td>
             <td className="tabular pt-2 text-right">{money(total)}</td>
           </tr>
@@ -136,8 +136,8 @@ function ReportCard({ title, subtitle, children }: { title: string; subtitle: st
   return (
     <Card>
       <div className="mb-5 text-center">
-        <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
-        <p className="text-sm text-slate-500">{subtitle}</p>
+        <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">{title}</h2>
+        <p className="text-sm text-slate-500 dark:text-slate-400">{subtitle}</p>
       </div>
       <div className="mx-auto max-w-2xl">{children}</div>
     </Card>
@@ -152,7 +152,7 @@ function ProfitLoss({ from, to }: { from: string; to: string }) {
     <ReportCard title="Profit & loss" subtitle={`${date(from)} – ${date(to)}`}>
       <Section title="Income" rows={data.income} total={data.totalIncome} totalLabel="Total income" />
       <Section title="Expenses" rows={data.expenses} total={data.totalExpenses} totalLabel="Total expenses" />
-      <div className={cn('flex justify-between rounded-lg px-4 py-3 text-base font-semibold', net >= 0 ? 'bg-emerald-50 text-emerald-800' : 'bg-rose-50 text-rose-800')}>
+      <div className={cn('flex justify-between rounded-lg px-4 py-3 text-base font-semibold', net >= 0 ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-800' : 'bg-rose-50 dark:bg-rose-500/10 text-rose-800')}>
         <span>{net >= 0 ? 'Net profit' : 'Net loss'}</span>
         <span className="tabular">{money(data.netProfit)}</span>
       </div>
@@ -193,18 +193,18 @@ function TrialBalance({ asOf }: { asOf: string }) {
   return (
     <ReportCard title="Trial balance" subtitle={`As of ${date(asOf)}`}>
       <table className="w-full text-sm">
-        <thead className="border-b border-slate-200 text-xs font-semibold uppercase tracking-wide text-slate-500">
+        <thead className="border-b border-slate-200 dark:border-slate-800 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
           <tr>
             <th className="py-2 text-left">Account</th>
             <th className="py-2 text-right">Debit</th>
             <th className="py-2 text-right">Credit</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-100">
+        <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
           {data.rows.map((r) => (
             <tr key={r.id}>
               <td className="py-1.5">
-                <span className="mr-2 font-mono text-xs text-slate-400">{r.code}</span>
+                <span className="mr-2 font-mono text-xs text-slate-400 dark:text-slate-500">{r.code}</span>
                 {r.name}
               </td>
               <td className="tabular py-1.5 text-right">{Number(r.debit) ? money(r.debit) : ''}</td>
@@ -241,7 +241,7 @@ function Aging({ kind, asOf }: { kind: 'receivables' | 'payables'; asOf: string 
     <Card title={`${kind === 'receivables' ? 'Receivables' : 'Payables'} aging — days overdue as of ${date(asOf)}`} padded={false}>
       <div className="overflow-x-auto">
         <table className="min-w-full text-sm">
-          <thead className="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <thead className="bg-slate-50 dark:bg-slate-800 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
             <tr>
               <th className="px-4 py-2.5 text-left">{kind === 'receivables' ? 'Customer' : 'Supplier'}</th>
               {BUCKETS.map(([k, l]) => (
@@ -251,11 +251,11 @@ function Aging({ kind, asOf }: { kind: 'receivables' | 'payables'; asOf: string 
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
             {data.rows.map((r) => (
               <tr key={r.partyId}>
                 <td className="px-4 py-2">
-                  <Link href={href + r.partyId} className="text-slate-800 hover:text-indigo-600">
+                  <Link href={href + r.partyId} className="text-slate-800 dark:text-slate-200 hover:text-indigo-600">
                     {r.partyName}
                   </Link>
                 </td>
@@ -268,13 +268,13 @@ function Aging({ kind, asOf }: { kind: 'receivables' | 'payables'; asOf: string 
             ))}
             {data.rows.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-4 py-10 text-center text-slate-500">
+                <td colSpan={7} className="px-4 py-10 text-center text-slate-500 dark:text-slate-400">
                   Nothing outstanding
                 </td>
               </tr>
             )}
           </tbody>
-          <tfoot className="border-t border-slate-200 bg-slate-50 font-semibold">
+          <tfoot className="border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 font-semibold">
             <tr>
               <td className="px-4 py-2.5">Total</td>
               {BUCKETS.map(([k]) => (
@@ -302,7 +302,7 @@ function Ledger({ accountId, from, to }: { accountId: string; from: string; to: 
     <Card title={`${data.account.code} · ${data.account.name}`} padded={false}>
       <div className="overflow-x-auto">
         <table className="min-w-full text-sm">
-          <thead className="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <thead className="bg-slate-50 dark:bg-slate-800 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
             <tr>
               <th className="px-4 py-2.5 text-left">Date</th>
               <th className="px-4 py-2.5 text-left">Entry</th>
@@ -312,8 +312,8 @@ function Ledger({ accountId, from, to }: { accountId: string; from: string; to: 
               <th className="px-4 py-2.5 text-right">Balance</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
-            <tr className="bg-slate-50/50 text-slate-500">
+          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+            <tr className="bg-slate-50/50 text-slate-500 dark:text-slate-400">
               <td className="px-4 py-2" colSpan={5}>
                 Opening balance
               </td>
@@ -323,18 +323,18 @@ function Ledger({ accountId, from, to }: { accountId: string; from: string; to: 
               <tr key={`${r.id}-${i}`}>
                 <td className="px-4 py-2">{date(r.date)}</td>
                 <td className="px-4 py-2">
-                  <Link href={`/accounting/journals/${r.id}`} className="font-medium text-indigo-600 hover:underline">
+                  <Link href={`/accounting/journals/${r.id}`} className="font-medium text-indigo-600 dark:text-indigo-400 hover:underline">
                     {r.number}
                   </Link>
                 </td>
-                <td className="px-4 py-2 text-slate-700">{r.lineDescription ?? r.description}</td>
+                <td className="px-4 py-2 text-slate-700 dark:text-slate-300">{r.lineDescription ?? r.description}</td>
                 <td className="tabular px-4 py-2 text-right">{Number(r.debit) ? money(r.debit) : ''}</td>
                 <td className="tabular px-4 py-2 text-right">{Number(r.credit) ? money(r.credit) : ''}</td>
                 <td className="tabular px-4 py-2 text-right font-medium">{money(r.balance)}</td>
               </tr>
             ))}
           </tbody>
-          <tfoot className="border-t border-slate-200 bg-slate-50 font-semibold">
+          <tfoot className="border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 font-semibold">
             <tr>
               <td className="px-4 py-2.5" colSpan={5}>
                 Closing balance

@@ -5,8 +5,13 @@ export const setCurrency = (c: string) => {
 
 type Num = string | number | null | undefined;
 
-export const money = (v: Num) =>
-  new Intl.NumberFormat(undefined, { style: 'currency', currency, minimumFractionDigits: 2 }).format(Number(v ?? 0));
+export const money = (v: Num, opts: { compact?: boolean } = {}) =>
+  new Intl.NumberFormat(undefined, {
+    style: 'currency',
+    currency,
+    minimumFractionDigits: opts.compact ? 0 : 2,
+    notation: opts.compact ? 'compact' : 'standard',
+  }).format(Number(v ?? 0));
 
 export const num = (v: Num, maxDigits = 3) => new Intl.NumberFormat(undefined, { maximumFractionDigits: maxDigits }).format(Number(v ?? 0));
 

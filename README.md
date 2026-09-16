@@ -10,8 +10,8 @@ not just what they do.
 
 | Layer      | Tech                                                              |
 | ---------- | ------------------------------------------------------------------ |
-| Frontend   | Next.js 15 (App Router), React 19, Tailwind CSS 4, TanStack Query |
-| Backend    | NestJS 11, Prisma 6, Zod validation, JWT + rotating refresh tokens |
+| Frontend   | Next.js 15 (App Router), React 19, Tailwind CSS 4, TanStack Query, Recharts |
+| Backend    | NestJS 11, Prisma 6, Zod validation, JWT + rotating refresh tokens, TOTP 2FA |
 | Database   | PostgreSQL 17                                                     |
 | AI         | Claude (`@anthropic-ai/sdk`) — chat + document extraction, both optional |
 
@@ -61,7 +61,8 @@ low-stock alerts, and moving weighted-average costing.
 **Accounting** — hierarchical chart of accounts, manual journals (draft → post → void), payments (including
 voiding one, which reopens the invoice/bill it was applied to), bank reconciliation, year-end close, and
 reports: profit & loss, balance sheet, trial balance, general ledger, receivables/payables aging. PDF
-generation for invoices, quotations, purchase orders and payslips.
+generation for invoices, quotations, purchase orders and payslips. An analytics dashboard charts 12-month
+cash balance, income vs. expense, top customers and aging buckets.
 
 **HR & Payroll** — departments, employees, daily attendance, leave types with yearly entitlements and
 balance checks, and payroll runs (unpaid-leave deduction, overtime, tax, other deductions → approve → pay).
@@ -80,6 +81,16 @@ supplier bill (PDF or photo) and pre-fill the New Bill form from it. Both featur
 `ADMIN` (everything), `ACCOUNTANT`, `SALES`, `PURCHASING`, `INVENTORY`, `HR`, `VIEWER`. Enforced on every
 API route (`@Roles(...)`) and mirrored in the sidebar and the copilot's tool list — a role never sees a
 capability its API access wouldn't allow anyway.
+
+## Security & UX extras
+
+- **Two-factor authentication** — optional TOTP (any authenticator app), enabled from *My account*. A
+  scanned QR code plus 8 single-use recovery codes; see
+  [ARCHITECTURE.md](ARCHITECTURE.md#auth-short-lived-access-tokens-rotating-refresh-tokens) for how the
+  login challenge works.
+- **Command palette** — `⌘K` / `Ctrl+K` anywhere in the app: fuzzy-jump to any page or jump straight to
+  "New sales invoice", "New purchase bill", etc., filtered by what your role can actually do.
+- **Dark mode** — a light/dark/system toggle in the sidebar, persisted per browser.
 
 ## API docs
 

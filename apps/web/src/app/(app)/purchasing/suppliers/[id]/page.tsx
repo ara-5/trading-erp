@@ -22,7 +22,7 @@ interface SupplierDetail extends PartyRecord {
 }
 
 const columns = [
-  { key: 'number', header: 'Number', cell: (d: Doc) => <span className="font-medium text-slate-900">{d.number}</span> },
+  { key: 'number', header: 'Number', cell: (d: Doc) => <span className="font-medium text-slate-900 dark:text-slate-100">{d.number}</span> },
   { key: 'date', header: 'Date', cell: (d: Doc) => date(d.date) },
   { key: 'status', header: 'Status', cell: (d: Doc) => <StatusBadge status={d.status} /> },
   { key: 'total', header: 'Total', align: 'right' as const, cell: (d: Doc) => money(d.total) },

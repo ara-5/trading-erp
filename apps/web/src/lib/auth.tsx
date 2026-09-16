@@ -10,14 +10,19 @@ export interface User {
   name: string;
   role: Role;
   mustChangePassword: boolean;
+  twoFactorEnabled: boolean;
 }
+
+export type LoginResult = { twoFactorRequired: false; user: User } | { twoFactorRequired: true; challenge: string };
 
 interface AuthState {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<User>;
+  login: (email: string, password: string) => Promise<LoginResult>;
+  verifyTwoFactor: (challenge: string, code: string) => Promise<User>;
   logout: () => Promise<void>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
+  refreshUser: () => Promise<void>;
   hasRole: (...roles: Role[]) => boolean;
 }
 
@@ -36,10 +41,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const login = useCallback(async (email: string, password: string) => {
-    const res = await api<{ accessToken: string; user: User }>('/auth/login', { method: 'POST', body: { email, password } });
+  const login = useCallback(async (email: string, password: string): Promise<LoginResult> => {
+    const res = await api<{ twoFactorRequired: boolean; challenge?: string; accessToken?: string; user?: User }>('/auth/login', {
+      method: 'POST',
+      body: { email, password },
+    });
+    if (res.twoFactorRequired) return { twoFactorRequired: true, challenge: res.challenge! };
+    session.set(res.accessToken!, res.user!);
+    return { twoFactorRequired: false, user: res.user! };
+  }, []);
+
+  const verifyTwoFactor = useCallback(async (challenge: string, code: string) => {
+    const res = await post<{ accessToken: string; user: User }>('/auth/2fa/verify-login', { challenge, code });
     session.set(res.accessToken, res.user);
     return res.user;
+  }, []);
+
+  const refreshUser = useCallback(async () => {
+    const u = await api<User>('/auth/me');
+    session.set(session.token, u);
   }, []);
 
   const logout = useCallback(async () => {
@@ -58,7 +78,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [user],
   );
 
-  return <AuthContext.Provider value={{ user, loading, login, logout, changePassword, hasRole }}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={{ user, loading, login, verifyTwoFactor, logout, changePassword, refreshUser, hasRole }}>{children}</AuthContext.Provider>
+  );
 }
 
 export function useAuth() {

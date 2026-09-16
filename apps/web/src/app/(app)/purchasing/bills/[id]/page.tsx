@@ -69,11 +69,11 @@ export default function BillPage() {
       <Card>
         <DescriptionList
           items={[
-            ['Supplier', <Link key="s" href={`/purchasing/suppliers/${bill.supplier.id}`} className="text-indigo-600 hover:underline">{bill.supplier.name}</Link>],
+            ['Supplier', <Link key="s" href={`/purchasing/suppliers/${bill.supplier.id}`} className="text-indigo-600 dark:text-indigo-400 hover:underline">{bill.supplier.name}</Link>],
             ['Supplier invoice #', bill.supplierRef],
             ['Bill date', date(bill.date)],
             ['Due date', date(bill.dueDate)],
-            ['Purchase order', bill.purchaseOrder ? <Link key="po" href={`/purchasing/orders/${bill.purchaseOrder.id}`} className="text-indigo-600 hover:underline">{bill.purchaseOrder.number}</Link> : '—'],
+            ['Purchase order', bill.purchaseOrder ? <Link key="po" href={`/purchasing/orders/${bill.purchaseOrder.id}`} className="text-indigo-600 dark:text-indigo-400 hover:underline">{bill.purchaseOrder.number}</Link> : '—'],
             ['Balance due', <span key="b" className="font-semibold">{money(outstanding)}</span>],
           ]}
         />
@@ -81,7 +81,7 @@ export default function BillPage() {
 
       <Card title="Lines" className="mt-4" padded={false}>
         <LinesTable lines={bill.lines} />
-        <div className="flex justify-end border-t border-slate-100 p-4">
+        <div className="flex justify-end border-t border-slate-100 dark:border-slate-800 p-4">
           <Totals subtotal={bill.subtotal} taxTotal={bill.taxTotal} total={bill.total} amountPaid={bill.status === 'DRAFT' ? undefined : bill.amountPaid} />
         </div>
       </Card>
@@ -91,7 +91,7 @@ export default function BillPage() {
           <DataTable
             rows={bill.payments}
             columns={[
-              { key: 'number', header: 'Payment', cell: (p) => <span className="font-medium text-slate-900">{p.number}</span> },
+              { key: 'number', header: 'Payment', cell: (p) => <span className="font-medium text-slate-900 dark:text-slate-100">{p.number}</span> },
               { key: 'date', header: 'Date', cell: (p) => date(p.date) },
               { key: 'method', header: 'Method', cell: (p) => humanize(p.method) },
               { key: 'ref', header: 'Reference', cell: (p) => p.reference ?? '—' },

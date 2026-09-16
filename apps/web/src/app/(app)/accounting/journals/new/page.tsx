@@ -89,9 +89,9 @@ export default function NewJournalPage() {
         </div>
       </Card>
       <Card title="Lines" className="mt-4">
-        <div className="overflow-x-auto rounded-lg ring-1 ring-slate-200">
+        <div className="overflow-x-auto rounded-lg ring-1 ring-slate-200 dark:ring-slate-800">
           <table className="min-w-full text-sm">
-            <thead className="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <thead className="bg-slate-50 dark:bg-slate-800 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
               <tr>
                 <th className="px-2 py-2 text-left">Account</th>
                 <th className="px-2 py-2 text-left">Memo</th>
@@ -100,7 +100,7 @@ export default function NewJournalPage() {
                 <th className="w-10" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {lines.map((l) => (
                 <tr key={l.key}>
                   <td className="min-w-56 px-2 py-1.5">
@@ -123,17 +123,17 @@ export default function NewJournalPage() {
                     <Input type="number" min="0" step="0.01" value={l.credit} onChange={(e) => update(l.key, { credit: e.target.value, debit: e.target.value ? '' : l.debit })} className="h-8 text-right tabular" />
                   </td>
                   <td className="px-1">
-                    <button type="button" disabled={lines.length <= 2} onClick={() => setLines(lines.filter((x) => x.key !== l.key))} className="rounded p-1.5 text-slate-400 hover:text-rose-600 disabled:opacity-30" aria-label="Remove line">
+                    <button type="button" disabled={lines.length <= 2} onClick={() => setLines(lines.filter((x) => x.key !== l.key))} className="rounded p-1.5 text-slate-400 dark:text-slate-500 hover:text-rose-600 disabled:opacity-30" aria-label="Remove line">
                       <Trash2 className="size-4" />
                     </button>
                   </td>
                 </tr>
               ))}
             </tbody>
-            <tfoot className="border-t border-slate-200 bg-slate-50 font-semibold">
+            <tfoot className="border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 font-semibold">
               <tr>
                 <td className="px-2 py-2" colSpan={2}>
-                  <span className={cn('text-xs', balanced ? 'text-emerald-700' : 'text-rose-600')}>
+                  <span className={cn('text-xs', balanced ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-600')}>
                     {balanced ? 'Balanced' : `Out of balance by ${money(Math.abs(totalDebit - totalCredit))}`}
                   </span>
                 </td>

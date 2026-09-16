@@ -45,7 +45,7 @@ export default function LeavePage() {
           </>
         }
         columns={[
-          { key: 'employee', header: 'Employee', cell: (l) => <span className="font-medium text-slate-900">{l.employee.firstName} {l.employee.lastName}</span> },
+          { key: 'employee', header: 'Employee', cell: (l) => <span className="font-medium text-slate-900 dark:text-slate-100">{l.employee.firstName} {l.employee.lastName}</span> },
           { key: 'type', header: 'Type', cell: (l) => l.leaveType.name },
           { key: 'from', header: 'From', cell: (l) => date(l.startDate) },
           { key: 'to', header: 'To', cell: (l) => date(l.endDate) },

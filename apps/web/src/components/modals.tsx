@@ -156,18 +156,18 @@ export function FulfilModal({ title, action, lines, onSubmit, onClose, pending }
         <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
       </Field>
       <table className="min-w-full text-sm">
-        <thead className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+        <thead className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
           <tr>
             <th className="py-2 text-left">Item</th>
             <th className="py-2 text-right">Remaining</th>
             <th className="w-32 py-2 text-right">Quantity</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-100">
+        <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
           {open.map((l) => (
             <tr key={l.id}>
-              <td className="py-2 pr-2 text-slate-800">{l.label}</td>
-              <td className="tabular py-2 text-right text-slate-600">
+              <td className="py-2 pr-2 text-slate-800 dark:text-slate-200">{l.label}</td>
+              <td className="tabular py-2 text-right text-slate-600 dark:text-slate-400">
                 {num(l.remaining)} {l.uom}
               </td>
               <td className="py-2 pl-2">

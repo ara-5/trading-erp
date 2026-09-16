@@ -74,10 +74,10 @@ export default function InvoicePage() {
       <Card>
         <DescriptionList
           items={[
-            ['Customer', <Link key="c" href={`/sales/customers/${inv.customer.id}`} className="text-indigo-600 hover:underline">{inv.customer.name}</Link>],
+            ['Customer', <Link key="c" href={`/sales/customers/${inv.customer.id}`} className="text-indigo-600 dark:text-indigo-400 hover:underline">{inv.customer.name}</Link>],
             ['Invoice date', date(inv.date)],
             ['Due date', date(inv.dueDate)],
-            ['Sales order', inv.salesOrder ? <Link key="so" href={`/sales/orders/${inv.salesOrder.id}`} className="text-indigo-600 hover:underline">{inv.salesOrder.number}</Link> : '—'],
+            ['Sales order', inv.salesOrder ? <Link key="so" href={`/sales/orders/${inv.salesOrder.id}`} className="text-indigo-600 dark:text-indigo-400 hover:underline">{inv.salesOrder.number}</Link> : '—'],
             ['Tax number', inv.customer.taxNumber],
             ['Billing address', inv.customer.address],
             ['Balance due', <span key="b" className="font-semibold">{money(outstanding)}</span>],
@@ -87,7 +87,7 @@ export default function InvoicePage() {
 
       <Card title="Lines" className="mt-4" padded={false}>
         <LinesTable lines={inv.lines} />
-        <div className="flex justify-end border-t border-slate-100 p-4">
+        <div className="flex justify-end border-t border-slate-100 dark:border-slate-800 p-4">
           <Totals subtotal={inv.subtotal} taxTotal={inv.taxTotal} total={inv.total} amountPaid={inv.status === 'DRAFT' ? undefined : inv.amountPaid} />
         </div>
       </Card>
@@ -97,7 +97,7 @@ export default function InvoicePage() {
           <DataTable
             rows={inv.payments}
             columns={[
-              { key: 'number', header: 'Receipt', cell: (p) => <span className="font-medium text-slate-900">{p.number}</span> },
+              { key: 'number', header: 'Receipt', cell: (p) => <span className="font-medium text-slate-900 dark:text-slate-100">{p.number}</span> },
               { key: 'date', header: 'Date', cell: (p) => date(p.date) },
               { key: 'method', header: 'Method', cell: (p) => humanize(p.method) },
               { key: 'ref', header: 'Reference', cell: (p) => p.reference ?? '—' },
@@ -109,7 +109,7 @@ export default function InvoicePage() {
 
       {inv.notes && (
         <Card title="Notes" className="mt-4">
-          <p className="whitespace-pre-wrap text-sm text-slate-700">{inv.notes}</p>
+          <p className="whitespace-pre-wrap text-sm text-slate-700 dark:text-slate-300">{inv.notes}</p>
         </Card>
       )}
 

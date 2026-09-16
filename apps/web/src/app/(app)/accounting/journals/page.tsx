@@ -45,7 +45,7 @@ export default function JournalsPage() {
         </LinkButton>
       }
       columns={[
-        { key: 'number', header: 'Number', cell: (e) => <span className="font-medium text-slate-900">{e.number}</span> },
+        { key: 'number', header: 'Number', cell: (e) => <span className="font-medium text-slate-900 dark:text-slate-100">{e.number}</span> },
         { key: 'date', header: 'Date', cell: (e) => date(e.date) },
         { key: 'desc', header: 'Description', className: 'max-w-md truncate', cell: (e) => e.description },
         { key: 'source', header: 'Source', cell: (e) => humanize(e.sourceType) },

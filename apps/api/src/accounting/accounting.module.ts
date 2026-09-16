@@ -8,6 +8,7 @@ import { D, round2 } from '../common/money';
 import { contains, listQuerySchema, pageArgs, paged, zDate, zId, zMoney, zOptStr, zPct, ZodPipe } from '../common/zod';
 import { PrismaService } from '../prisma/prisma.service';
 import { LedgerService, naturalBalance } from './ledger.service';
+import { AnalyticsController, AnalyticsService } from './analytics';
 import { BankingController, BankingService } from './banking';
 import { ClosingController, ClosingService } from './closing';
 import { PaymentsController, PaymentsService } from './payments';
@@ -321,8 +322,8 @@ export class AccountingController {
 }
 
 @Module({
-  controllers: [AccountingController, PaymentsController, ReportsController, ClosingController, BankingController],
-  providers: [LedgerService, AccountsService, JournalService, PaymentsService, ReportsService, ClosingService, BankingService],
+  controllers: [AccountingController, PaymentsController, ReportsController, ClosingController, BankingController, AnalyticsController],
+  providers: [LedgerService, AccountsService, JournalService, PaymentsService, ReportsService, ClosingService, BankingService, AnalyticsService],
   exports: [LedgerService, ReportsService],
 })
 export class AccountingModule {}

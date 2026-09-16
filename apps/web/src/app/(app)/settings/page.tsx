@@ -141,7 +141,7 @@ function SystemAccounts() {
         </Button>
       }
     >
-      <p className="mb-4 text-sm text-slate-500">These accounts receive automatic postings from invoices, bills, payments, stock movements and payroll.</p>
+      <p className="mb-4 text-sm text-slate-500 dark:text-slate-400">These accounts receive automatic postings from invoices, bills, payments, stock movements and payroll.</p>
       <div className="grid grid-cols-1 gap-x-6 gap-y-3 md:grid-cols-2">
         {SYSTEM_KEYS.map((key) => (
           <Field key={key} label={humanize(key)}>
@@ -176,7 +176,7 @@ function TaxRates() {
   return (
     <Card title="Tax rates" padded={false}>
       <form
-        className="flex flex-wrap items-end gap-2 border-b border-slate-100 p-4"
+        className="flex flex-wrap items-end gap-2 border-b border-slate-100 dark:border-slate-800 p-4"
         onSubmit={(e) => {
           e.preventDefault();
           add.mutate();

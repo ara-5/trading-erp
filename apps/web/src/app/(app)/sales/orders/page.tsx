@@ -28,7 +28,7 @@ export default function SalesOrdersPage() {
         </LinkButton>
       }
       columns={[
-        { key: 'number', header: 'Number', cell: (o) => <span className="font-medium text-slate-900">{o.number}</span> },
+        { key: 'number', header: 'Number', cell: (o) => <span className="font-medium text-slate-900 dark:text-slate-100">{o.number}</span> },
         { key: 'customer', header: 'Customer', cell: (o) => o.customer.name },
         { key: 'date', header: 'Date', cell: (o) => date(o.date) },
         { key: 'wh', header: 'Warehouse', cell: (o) => o.warehouse.code },

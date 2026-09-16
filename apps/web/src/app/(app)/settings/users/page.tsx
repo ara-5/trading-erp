@@ -34,7 +34,7 @@ export default function UsersPage() {
           </Button>
         }
         columns={[
-          { key: 'name', header: 'Name', cell: (u) => <span className="font-medium text-slate-900">{u.name}</span> },
+          { key: 'name', header: 'Name', cell: (u) => <span className="font-medium text-slate-900 dark:text-slate-100">{u.name}</span> },
           { key: 'email', header: 'Email', cell: (u) => u.email },
           { key: 'role', header: 'Role', cell: (u) => <Badge tone={u.role === 'ADMIN' ? 'purple' : 'blue'}>{humanize(u.role)}</Badge> },
           { key: 'status', header: 'Status', cell: (u) => (u.isActive ? <Badge tone="green">Active</Badge> : <Badge>Disabled</Badge>) },

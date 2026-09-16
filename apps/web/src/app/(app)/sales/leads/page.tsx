@@ -49,8 +49,8 @@ export default function LeadsPage() {
             header: 'Lead',
             cell: (l) => (
               <div>
-                <p className="font-medium text-slate-900">{l.name}</p>
-                <p className="text-xs text-slate-500">{l.company}</p>
+                <p className="font-medium text-slate-900 dark:text-slate-100">{l.name}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">{l.company}</p>
               </div>
             ),
           },
@@ -66,9 +66,9 @@ export default function LeadsPage() {
           {STATUSES.map((s) => {
             const row = pipeline.data?.find((p) => p.status === s);
             return (
-              <div key={s} className={cn('rounded-lg bg-white px-3 py-2 ring-1 ring-slate-200', s === 'WON' && 'ring-emerald-200', s === 'LOST' && 'ring-rose-200')}>
-                <p className="text-xs font-medium text-slate-500">{humanize(s)}</p>
-                <p className="tabular text-sm font-semibold text-slate-900">
+              <div key={s} className={cn('rounded-lg bg-white dark:bg-slate-900 px-3 py-2 ring-1 ring-slate-200 dark:ring-slate-800', s === 'WON' && 'ring-emerald-200', s === 'LOST' && 'ring-rose-200')}>
+                <p className="text-xs font-medium text-slate-500 dark:text-slate-400">{humanize(s)}</p>
+                <p className="tabular text-sm font-semibold text-slate-900 dark:text-slate-100">
                   {row?.count ?? 0} · {money(row?.value ?? 0)}
                 </p>
               </div>
@@ -167,7 +167,7 @@ function LeadModal({ lead, onClose }: { lead: Lead | null; onClose: () => void }
         <Field label="Notes" className="col-span-2">
           <Textarea value={f.notes} onChange={(e) => set('notes', e.target.value)} />
         </Field>
-        {lead?.customer && <p className="col-span-2 text-sm text-emerald-700">Converted to customer {lead.customer.name}</p>}
+        {lead?.customer && <p className="col-span-2 text-sm text-emerald-700 dark:text-emerald-400">Converted to customer {lead.customer.name}</p>}
       </form>
     </Modal>
   );

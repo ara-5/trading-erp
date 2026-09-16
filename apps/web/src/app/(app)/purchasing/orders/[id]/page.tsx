@@ -78,7 +78,7 @@ export default function PurchaseOrderPage() {
       <Card>
         <DescriptionList
           items={[
-            ['Supplier', <Link key="s" href={`/purchasing/suppliers/${po.supplier.id}`} className="text-indigo-600 hover:underline">{po.supplier.name}</Link>],
+            ['Supplier', <Link key="s" href={`/purchasing/suppliers/${po.supplier.id}`} className="text-indigo-600 dark:text-indigo-400 hover:underline">{po.supplier.name}</Link>],
             ['Order date', date(po.date)],
             ['Expected', date(po.expectedDate)],
             ['Deliver to', `${po.warehouse.code} · ${po.warehouse.name}`],
@@ -94,17 +94,17 @@ export default function PurchaseOrderPage() {
             { key: 'billedQty', label: 'Billed' },
           ]}
         />
-        <div className="flex justify-end border-t border-slate-100 p-4">
+        <div className="flex justify-end border-t border-slate-100 dark:border-slate-800 p-4">
           <Totals subtotal={po.subtotal} taxTotal={po.taxTotal} total={po.total} />
         </div>
       </Card>
 
       {po.bills.length > 0 && (
         <Card title="Bills" className="mt-4">
-          <ul className="divide-y divide-slate-100 text-sm">
+          <ul className="divide-y divide-slate-100 dark:divide-slate-800 text-sm">
             {po.bills.map((b) => (
               <li key={b.id} className="flex items-center justify-between py-2">
-                <Link href={`/purchasing/bills/${b.id}`} className="font-medium text-indigo-600 hover:underline">
+                <Link href={`/purchasing/bills/${b.id}`} className="font-medium text-indigo-600 dark:text-indigo-400 hover:underline">
                   {b.number}
                 </Link>
                 <span className="flex items-center gap-3">
@@ -119,7 +119,7 @@ export default function PurchaseOrderPage() {
 
       {po.notes && (
         <Card title="Notes" className="mt-4">
-          <p className="whitespace-pre-wrap text-sm text-slate-700">{po.notes}</p>
+          <p className="whitespace-pre-wrap text-sm text-slate-700 dark:text-slate-300">{po.notes}</p>
         </Card>
       )}
 

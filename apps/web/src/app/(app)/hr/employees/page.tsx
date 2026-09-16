@@ -49,10 +49,10 @@ export default function EmployeesPage() {
             header: 'Name',
             cell: (e) => (
               <div>
-                <p className="font-medium text-slate-900">
+                <p className="font-medium text-slate-900 dark:text-slate-100">
                   {e.firstName} {e.lastName}
                 </p>
-                <p className="text-xs text-slate-500">{e.jobTitle}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">{e.jobTitle}</p>
               </div>
             ),
           },

@@ -108,6 +108,13 @@ An admin-set password (`POST /admin/users`, or a reset) is marked `mustChangePas
 rejects every route for that user except `/auth/me` and `/auth/change-password` until they set their own
 password, which also revokes every other outstanding session for the account.
 
+Optional TOTP two-factor auth (`AuthService.setupTwoFactor`/`enableTwoFactor`/`disableTwoFactor`) adds a
+second step without a second table of session state: when a 2FA-enabled account passes the password check,
+`login()` returns a `challenge` — a JWT with `purpose: '2fa-login'` and a 5-minute expiry, not a session —
+instead of tokens. `POST /auth/2fa/verify-login` trades that challenge plus a 6-digit code (or a one-time
+recovery code, hashed the same way as refresh tokens) for the real session. The challenge is stateless and
+self-expiring, so there's nothing to revoke or clean up if it's never redeemed.
+
 ## Year-end close and the period lock
 
 `CompanySettings.lockDate` is checked by `LedgerService.assertOpenPeriod` on every post and on void —

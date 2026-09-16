@@ -47,7 +47,7 @@ export default function ProductsPage() {
             key: 'name',
             header: 'Name',
             cell: (p) => (
-              <span className="flex items-center gap-2 font-medium text-slate-900">
+              <span className="flex items-center gap-2 font-medium text-slate-900 dark:text-slate-100">
                 {p.name}
                 {!p.isActive && <Badge>Inactive</Badge>}
                 {!p.trackInventory && <Badge tone="purple">Service</Badge>}
@@ -61,7 +61,7 @@ export default function ProductsPage() {
             align: 'right',
             cell: (p) =>
               p.trackInventory ? (
-                <span className={Number(p.reorderLevel) > 0 && Number(p.onHand) <= Number(p.reorderLevel) ? 'font-medium text-amber-700' : ''}>
+                <span className={Number(p.reorderLevel) > 0 && Number(p.onHand) <= Number(p.reorderLevel) ? 'font-medium text-amber-700 dark:text-amber-400' : ''}>
                   {num(p.onHand)} {p.uom}
                 </span>
               ) : (

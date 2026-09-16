@@ -95,13 +95,13 @@ export default function DashboardPage() {
 
 function QuickStat({ href, icon, label, value, warn, sub }: { href: string; icon: React.ReactNode; label: string; value: number; warn?: boolean; sub?: React.ReactNode }) {
   return (
-    <Link href={href} className="group rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200 transition hover:ring-indigo-300">
-      <div className={`flex items-center gap-1.5 text-xs font-medium ${warn ? 'text-amber-700' : 'text-slate-500'}`}>
+    <Link href={href} className="group rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200 transition hover:ring-indigo-300 dark:bg-slate-900 dark:ring-slate-800 dark:hover:ring-indigo-500/50">
+      <div className={`flex items-center gap-1.5 text-xs font-medium ${warn ? 'text-amber-700 dark:text-amber-400' : 'text-slate-500 dark:text-slate-400'}`}>
         {icon}
         {label}
       </div>
-      <div className="tabular mt-1.5 text-xl font-semibold text-slate-900">{value}</div>
-      {sub && <div className="mt-0.5 text-xs text-slate-500">{sub}</div>}
+      <div className="tabular mt-1.5 text-xl font-semibold text-slate-900 dark:text-slate-100">{value}</div>
+      {sub && <div className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{sub}</div>}
     </Link>
   );
 }
@@ -111,12 +111,12 @@ function TrendChart({ data }: { data: Dashboard['trend'] }) {
   const monthLabel = (m: string) => new Date(`${m}-01T00:00:00Z`).toLocaleDateString(undefined, { month: 'short', timeZone: 'UTC' });
   return (
     <div>
-      <div className="mb-3 flex gap-4 text-xs text-slate-600">
+      <div className="mb-3 flex gap-4 text-xs text-slate-600 dark:text-slate-400">
         <span className="inline-flex items-center gap-1.5">
           <span className="size-2.5 rounded-sm bg-indigo-500" /> Sales
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <span className="size-2.5 rounded-sm bg-slate-300" /> Purchases
+          <span className="size-2.5 rounded-sm bg-slate-300 dark:bg-slate-600" /> Purchases
         </span>
       </div>
       <div className="flex h-56 items-end gap-3">
@@ -129,12 +129,12 @@ function TrendChart({ data }: { data: Dashboard['trend'] }) {
                 title={`Sales ${money(d.sales)}`}
               />
               <div
-                className="w-full max-w-6 rounded-t bg-slate-300 transition-all"
+                className="w-full max-w-6 rounded-t bg-slate-300 transition-all dark:bg-slate-600"
                 style={{ height: `${(d.purchases / max) * 100}%` }}
                 title={`Purchases ${money(d.purchases)}`}
               />
             </div>
-            <div className="mt-2 text-center text-xs text-slate-500">{monthLabel(d.month)}</div>
+            <div className="mt-2 text-center text-xs text-slate-500 dark:text-slate-400">{monthLabel(d.month)}</div>
           </div>
         ))}
       </div>

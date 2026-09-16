@@ -36,13 +36,13 @@ export function ForcedPasswordChange() {
     <main className="flex min-h-full items-center justify-center px-4 py-12">
       <div className="w-full max-w-sm">
         <div className="mb-6 flex flex-col items-center text-center">
-          <div className="flex size-11 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
+          <div className="flex size-11 items-center justify-center rounded-xl bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400">
             <ShieldAlert className="size-6" />
           </div>
-          <h1 className="mt-4 text-lg font-semibold tracking-tight">Choose a new password</h1>
-          <p className="mt-1 text-sm text-slate-500">Your account was set up with a temporary password. Pick your own before continuing.</p>
+          <h1 className="mt-4 text-lg font-semibold tracking-tight text-slate-900 dark:text-slate-100">Choose a new password</h1>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Your account was set up with a temporary password. Pick your own before continuing.</p>
         </div>
-        <form onSubmit={onSubmit} className="space-y-4 rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+        <form onSubmit={onSubmit} className="space-y-4 rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
           <Field label="Temporary password">
             <Input type="password" autoComplete="current-password" required value={currentPassword} onChange={(e) => setCurrent(e.target.value)} autoFocus />
           </Field>
@@ -52,11 +52,11 @@ export function ForcedPasswordChange() {
           <Field label="Confirm new password">
             <Input type="password" autoComplete="new-password" minLength={10} required value={confirm} onChange={(e) => setConfirm(e.target.value)} />
           </Field>
-          {error && <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</p>}
+          {error && <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700 dark:bg-rose-500/10 dark:text-rose-400">{error}</p>}
           <Button type="submit" loading={submitting} className="w-full">
             Set password &amp; continue
           </Button>
-          <button type="button" onClick={logout} className="w-full text-center text-xs text-slate-500 hover:text-slate-700">
+          <button type="button" onClick={logout} className="w-full text-center text-xs text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">
             Sign out instead
           </button>
         </form>

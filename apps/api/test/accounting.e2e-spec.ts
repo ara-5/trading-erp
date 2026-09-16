@@ -151,6 +151,23 @@ describe('Accounting controls (e2e)', () => {
     await pdf(`/hr/payroll/${run.id}/payslips/${slip.id}/pdf`);
   });
 
+  it('reports revenue, cash trend, top customers and aging on the analytics endpoint', async () => {
+    const inv = await invoice(420);
+    await receive(inv, 200);
+
+    const overview = await api.get('/accounting/analytics');
+    expect(overview.financials).toHaveLength(12);
+    expect(overview.cashTrend).toHaveLength(12);
+    expect(overview.financials.at(-1).income).toBeGreaterThan(0);
+
+    const top = overview.topCustomers.find((c: any) => c.customerId === customer.id);
+    expect(top?.revenue).toBeGreaterThanOrEqual(420);
+
+    const aging = overview.aging.receivables;
+    const outstanding = Number(aging.current) + Number(aging.d1_30) + Number(aging.d31_60) + Number(aging.d61_90) + Number(aging.d90plus);
+    expect(outstanding).toBeGreaterThanOrEqual(220); // 420 billed, 200 received, at least this invoice's remainder is outstanding
+  });
+
   it('documents routes with request schemas derived from the Zod validators', () => {
     const doc = createOpenApiDocument(app) as any;
     const createInvoice = doc.paths['/api/sales/invoices'].post;

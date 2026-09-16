@@ -28,7 +28,7 @@ export default function CustomersPage() {
         }
         columns={[
           { key: 'code', header: 'Code', cell: (c) => <span className="font-mono text-xs">{c.code}</span> },
-          { key: 'name', header: 'Name', cell: (c) => <span className="font-medium text-slate-900">{c.name}</span> },
+          { key: 'name', header: 'Name', cell: (c) => <span className="font-medium text-slate-900 dark:text-slate-100">{c.name}</span> },
           { key: 'email', header: 'Email', cell: (c) => c.email ?? '—' },
           { key: 'phone', header: 'Phone', cell: (c) => c.phone ?? '—' },
           { key: 'terms', header: 'Terms', cell: (c) => `${c.paymentTermsDays} days` },

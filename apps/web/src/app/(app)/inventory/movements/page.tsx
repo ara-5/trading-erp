@@ -49,7 +49,7 @@ export default function MovementsPage() {
           header: 'Quantity',
           align: 'right',
           cell: (m) => (
-            <span className={Number(m.quantity) < 0 ? 'text-rose-600' : 'text-emerald-700'}>
+            <span className={Number(m.quantity) < 0 ? 'text-rose-600' : 'text-emerald-700 dark:text-emerald-400'}>
               {Number(m.quantity) > 0 ? '+' : ''}
               {num(m.quantity)} {m.product.uom}
             </span>

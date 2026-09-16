@@ -85,10 +85,10 @@ export default function PayrollRunPage() {
         <Stat label="Net pay" value={money(run.totalNet)} />
       </div>
 
-      <Card title="Payslips" className="mt-4" padded={false} actions={draft && <span className="text-xs text-slate-500">Edit overtime and deductions, then approve</span>}>
+      <Card title="Payslips" className="mt-4" padded={false} actions={draft && <span className="text-xs text-slate-500 dark:text-slate-400">Edit overtime and deductions, then approve</span>}>
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-slate-200 text-sm">
-            <thead className="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800 text-sm">
+            <thead className="bg-slate-50 dark:bg-slate-800 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
               <tr>
                 <th className="px-4 py-2.5 text-left">Employee</th>
                 <th className="px-3 py-2.5 text-right">Base</th>
@@ -101,7 +101,7 @@ export default function PayrollRunPage() {
                 <th className="px-4 py-2.5 text-right">Net</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {run.payslips.map((p) => (
                 <PayslipRow key={`${p.id}-${p.overtime}-${p.otherDeductions}`} runId={run.id} slip={p} editable={draft} />
               ))}
@@ -127,10 +127,10 @@ function PayslipRow({ runId, slip, editable }: { runId: string; slip: Payslip; e
   return (
     <tr>
       <td className="px-4 py-2">
-        <p className="font-medium text-slate-900">
+        <p className="font-medium text-slate-900 dark:text-slate-100">
           {slip.employee.firstName} {slip.employee.lastName}
         </p>
-        <p className="text-xs text-slate-500">{slip.employee.bankAccount ?? slip.employee.code}</p>
+        <p className="text-xs text-slate-500 dark:text-slate-400">{slip.employee.bankAccount ?? slip.employee.code}</p>
       </td>
       <td className={cell}>{money(slip.baseSalary)}</td>
       <td className={cell}>{money(slip.allowances)}</td>
@@ -143,7 +143,7 @@ function PayslipRow({ runId, slip, editable }: { runId: string; slip: Payslip; e
       <td className={cell}>
         {editable ? <Input type="number" min="0" step="0.01" value={other} onChange={(e) => setOther(e.target.value)} onBlur={commit} className="ml-auto h-8 w-24 text-right" /> : money(slip.otherDeductions)}
       </td>
-      <td className="tabular px-4 py-2 text-right font-semibold text-slate-900">{money(slip.netPay)}</td>
+      <td className="tabular px-4 py-2 text-right font-semibold text-slate-900 dark:text-slate-100">{money(slip.netPay)}</td>
     </tr>
   );
 }

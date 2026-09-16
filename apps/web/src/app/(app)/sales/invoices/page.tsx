@@ -29,7 +29,7 @@ export default function InvoicesPage() {
         </LinkButton>
       }
       columns={[
-        { key: 'number', header: 'Number', cell: (i) => <span className="font-medium text-slate-900">{i.number}</span> },
+        { key: 'number', header: 'Number', cell: (i) => <span className="font-medium text-slate-900 dark:text-slate-100">{i.number}</span> },
         { key: 'customer', header: 'Customer', cell: (i) => i.customer.name },
         { key: 'date', header: 'Date', cell: (i) => date(i.date) },
         {

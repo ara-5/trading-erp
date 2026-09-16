@@ -25,13 +25,13 @@ export default function AuditLogPage() {
         { key: 'time', header: 'Time', cell: (a) => dateTime(a.createdAt) },
         { key: 'user', header: 'User', cell: (a) => a.user?.name ?? 'System' },
         { key: 'action', header: 'Action', cell: (a) => <Badge tone="blue">{a.action}</Badge> },
-        { key: 'entity', header: 'Entity', cell: (a) => <span className="font-medium text-slate-900">{a.entity}</span> },
-        { key: 'id', header: 'Record', cell: (a) => <span className="font-mono text-xs text-slate-500">{a.entityId ?? '—'}</span> },
+        { key: 'entity', header: 'Entity', cell: (a) => <span className="font-medium text-slate-900 dark:text-slate-100">{a.entity}</span> },
+        { key: 'id', header: 'Record', cell: (a) => <span className="font-mono text-xs text-slate-500 dark:text-slate-400">{a.entityId ?? '—'}</span> },
         {
           key: 'data',
           header: 'Details',
           className: 'max-w-sm truncate',
-          cell: (a) => (a.data ? <span className="font-mono text-xs text-slate-500" title={JSON.stringify(a.data, null, 2)}>{JSON.stringify(a.data)}</span> : ''),
+          cell: (a) => (a.data ? <span className="font-mono text-xs text-slate-500 dark:text-slate-400" title={JSON.stringify(a.data, null, 2)}>{JSON.stringify(a.data)}</span> : ''),
         },
       ]}
     />

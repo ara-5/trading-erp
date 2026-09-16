@@ -83,7 +83,7 @@ export default function ProductPage() {
                   key: 'qty',
                   header: 'Qty',
                   align: 'right',
-                  cell: (m) => <span className={Number(m.quantity) < 0 ? 'text-rose-600' : 'text-emerald-700'}>{Number(m.quantity) > 0 ? '+' : ''}{num(m.quantity)}</span>,
+                  cell: (m) => <span className={Number(m.quantity) < 0 ? 'text-rose-600' : 'text-emerald-700 dark:text-emerald-400'}>{Number(m.quantity) > 0 ? '+' : ''}{num(m.quantity)}</span>,
                 },
                 { key: 'cost', header: 'Unit cost', align: 'right', cell: (m) => money(m.unitCost) },
               ]}

@@ -77,23 +77,23 @@ export default function QuotationPage() {
       <Card>
         <DescriptionList
           items={[
-            ['Customer', <Link key="c" href={`/sales/customers/${q.customer.id}`} className="text-indigo-600 hover:underline">{q.customer.name}</Link>],
+            ['Customer', <Link key="c" href={`/sales/customers/${q.customer.id}`} className="text-indigo-600 dark:text-indigo-400 hover:underline">{q.customer.name}</Link>],
             ['Date', date(q.date)],
             ['Valid until', date(q.validUntil)],
-            ['Sales orders', q.salesOrders.length ? q.salesOrders.map((so) => <Link key={so.id} href={`/sales/orders/${so.id}`} className="mr-2 text-indigo-600 hover:underline">{so.number}</Link>) : '—'],
+            ['Sales orders', q.salesOrders.length ? q.salesOrders.map((so) => <Link key={so.id} href={`/sales/orders/${so.id}`} className="mr-2 text-indigo-600 dark:text-indigo-400 hover:underline">{so.number}</Link>) : '—'],
           ]}
         />
       </Card>
 
       <Card title="Lines" className="mt-4" padded={false}>
         <LinesTable lines={q.lines} />
-        <div className="flex justify-end border-t border-slate-100 p-4">
+        <div className="flex justify-end border-t border-slate-100 dark:border-slate-800 p-4">
           <Totals subtotal={q.subtotal} taxTotal={q.taxTotal} total={q.total} />
         </div>
       </Card>
       {q.notes && (
         <Card title="Notes" className="mt-4">
-          <p className="whitespace-pre-wrap text-sm text-slate-700">{q.notes}</p>
+          <p className="whitespace-pre-wrap text-sm text-slate-700 dark:text-slate-300">{q.notes}</p>
         </Card>
       )}
 

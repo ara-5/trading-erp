@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.3.0
+
+**Security**
+- Optional TOTP two-factor authentication (`apps/api/src/auth/auth.module.ts`) — QR-code enrollment, 8
+  single-use recovery codes, and a stateless short-lived login challenge so a 2FA-enabled account needs a
+  code from the second step before a session is ever issued
+
+**Analytics**
+- A new `/accounting/analytics` endpoint and page: 12-month cash balance, income vs. expense, net profit
+  trend, receivables/payables aging, and top customers, charted with Recharts
+
+**UX**
+- Dark mode — light/dark/system toggle in the sidebar, applied across the shared UI kit and every page
+- Command palette (`⌘K`/`Ctrl+K`) — fuzzy navigation plus quick-create actions, filtered by role
+
 ## v0.2.0
 
 **Security & auth**

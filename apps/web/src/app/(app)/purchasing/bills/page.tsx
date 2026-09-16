@@ -31,7 +31,7 @@ export default function BillsPage() {
         </LinkButton>
       }
       columns={[
-        { key: 'number', header: 'Number', cell: (b) => <span className="font-medium text-slate-900">{b.number}</span> },
+        { key: 'number', header: 'Number', cell: (b) => <span className="font-medium text-slate-900 dark:text-slate-100">{b.number}</span> },
         { key: 'supplier', header: 'Supplier', cell: (b) => b.supplier.name },
         { key: 'ref', header: 'Supplier ref', cell: (b) => b.supplierRef ?? '—' },
         { key: 'date', header: 'Date', cell: (b) => date(b.date) },

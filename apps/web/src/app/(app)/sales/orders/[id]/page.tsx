@@ -78,10 +78,10 @@ export default function SalesOrderPage() {
       <Card>
         <DescriptionList
           items={[
-            ['Customer', <Link key="c" href={`/sales/customers/${so.customer.id}`} className="text-indigo-600 hover:underline">{so.customer.name}</Link>],
+            ['Customer', <Link key="c" href={`/sales/customers/${so.customer.id}`} className="text-indigo-600 dark:text-indigo-400 hover:underline">{so.customer.name}</Link>],
             ['Date', date(so.date)],
             ['Warehouse', `${so.warehouse.code} · ${so.warehouse.name}`],
-            ['From quotation', so.quotation ? <Link key="q" href={`/sales/quotations/${so.quotation.id}`} className="text-indigo-600 hover:underline">{so.quotation.number}</Link> : '—'],
+            ['From quotation', so.quotation ? <Link key="q" href={`/sales/quotations/${so.quotation.id}`} className="text-indigo-600 dark:text-indigo-400 hover:underline">{so.quotation.number}</Link> : '—'],
           ]}
         />
       </Card>
@@ -94,17 +94,17 @@ export default function SalesOrderPage() {
             { key: 'invoicedQty', label: 'Invoiced' },
           ]}
         />
-        <div className="flex justify-end border-t border-slate-100 p-4">
+        <div className="flex justify-end border-t border-slate-100 dark:border-slate-800 p-4">
           <Totals subtotal={so.subtotal} taxTotal={so.taxTotal} total={so.total} />
         </div>
       </Card>
 
       {so.invoices.length > 0 && (
         <Card title="Invoices" className="mt-4">
-          <ul className="divide-y divide-slate-100 text-sm">
+          <ul className="divide-y divide-slate-100 dark:divide-slate-800 text-sm">
             {so.invoices.map((inv) => (
               <li key={inv.id} className="flex items-center justify-between py-2">
-                <Link href={`/sales/invoices/${inv.id}`} className="font-medium text-indigo-600 hover:underline">
+                <Link href={`/sales/invoices/${inv.id}`} className="font-medium text-indigo-600 dark:text-indigo-400 hover:underline">
                   {inv.number}
                 </Link>
                 <span className="flex items-center gap-3">

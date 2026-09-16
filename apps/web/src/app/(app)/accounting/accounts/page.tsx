@@ -61,7 +61,7 @@ export default function AccountsPage() {
                   key: 'name',
                   header: 'Name',
                   cell: (a) => (
-                    <span style={{ paddingLeft: `${a.depth * 1.25}rem` }} className={a.isHeader ? 'font-semibold text-slate-900' : 'text-slate-700'}>
+                    <span style={{ paddingLeft: `${a.depth * 1.25}rem` }} className={a.isHeader ? 'font-semibold text-slate-900 dark:text-slate-100' : 'text-slate-700 dark:text-slate-300'}>
                       {a.name} {!a.isActive && <Badge>Inactive</Badge>}
                     </span>
                   ),
@@ -70,7 +70,7 @@ export default function AccountsPage() {
                   key: 'ledger',
                   header: '',
                   cell: (a) => (
-                    <Link href={`/accounting/reports?tab=ledger&accountId=${a.id}`} onClick={(e) => e.stopPropagation()} className="text-xs text-indigo-600 hover:underline">
+                    <Link href={`/accounting/reports?tab=ledger&accountId=${a.id}`} onClick={(e) => e.stopPropagation()} className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline">
                       Ledger
                     </Link>
                   ),

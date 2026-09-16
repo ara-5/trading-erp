@@ -55,7 +55,7 @@ export default function StockPage() {
         rowHref={(l) => `/inventory/products/${l.productId}`}
         columns={[
           { key: 'sku', header: 'SKU', cell: (l) => <span className="font-mono text-xs">{l.product.sku}</span> },
-          { key: 'name', header: 'Product', cell: (l) => <span className="font-medium text-slate-900">{l.product.name}</span> },
+          { key: 'name', header: 'Product', cell: (l) => <span className="font-medium text-slate-900 dark:text-slate-100">{l.product.name}</span> },
           { key: 'wh', header: 'Warehouse', cell: (l) => l.warehouse.code },
           { key: 'qty', header: 'Quantity', align: 'right', cell: (l) => `${num(l.quantity)} ${l.product.uom}` },
           { key: 'cost', header: 'Avg cost', align: 'right', cell: (l) => money(l.product.costPrice) },
@@ -74,20 +74,20 @@ export default function StockPage() {
             padded={false}
           >
             {low.data?.length ? (
-              <ul className="max-h-40 divide-y divide-slate-100 overflow-y-auto text-sm">
+              <ul className="max-h-40 divide-y divide-slate-100 dark:divide-slate-800 overflow-y-auto text-sm">
                 {low.data.map((p) => (
                   <li key={p.id} className="flex justify-between px-4 py-2">
-                    <Link href={`/inventory/products/${p.id}`} className="text-slate-800 hover:text-indigo-600">
+                    <Link href={`/inventory/products/${p.id}`} className="text-slate-800 dark:text-slate-200 hover:text-indigo-600">
                       {p.sku} · {p.name}
                     </Link>
-                    <span className="tabular text-amber-700">
+                    <span className="tabular text-amber-700 dark:text-amber-400">
                       {num(p.onHand)} / {num(p.reorderLevel)} {p.uom}
                     </span>
                   </li>
                 ))}
               </ul>
             ) : (
-              <p className="px-4 py-6 text-center text-sm text-slate-500">Everything is above its reorder level</p>
+              <p className="px-4 py-6 text-center text-sm text-slate-500 dark:text-slate-400">Everything is above its reorder level</p>
             )}
           </Card>
         </div>

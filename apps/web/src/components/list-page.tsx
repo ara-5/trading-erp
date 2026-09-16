@@ -53,7 +53,7 @@ export function ListPage<T extends { id?: string }>({
       <PageHeader title={title} subtitle={subtitle} actions={actions} />
       {children}
       <Card padded={false}>
-        <div className="flex flex-col gap-2 border-b border-slate-100 p-3 sm:flex-row sm:items-center">
+        <div className="flex flex-col gap-2 border-b border-slate-100 dark:border-slate-800 p-3 sm:flex-row sm:items-center">
           <SearchInput value={search} onChange={setSearch} placeholder={searchPlaceholder} />
           {statuses && (
             <Select value={status} onChange={(e) => setStatus(e.target.value)} className="sm:w-48" aria-label="Status filter">

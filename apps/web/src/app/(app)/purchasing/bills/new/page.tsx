@@ -97,8 +97,8 @@ export default function NewBillPage() {
               <Sparkles className="size-4.5" />
             </div>
             <div>
-              <p className="text-sm font-medium text-slate-900">Extract from a scanned bill</p>
-              <p className="text-xs text-slate-500">Upload a PDF or photo and the AI copilot will fill in the fields below.</p>
+              <p className="text-sm font-medium text-slate-900 dark:text-slate-100">Extract from a scanned bill</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Upload a PDF or photo and the AI copilot will fill in the fields below.</p>
             </div>
           </div>
           <Button type="button" variant="secondary" loading={extracting} onClick={() => fileInput.current?.click()}>
@@ -114,7 +114,7 @@ export default function NewBillPage() {
           />
         </div>
         {extracting && (
-          <p className="mt-3 flex items-center gap-1.5 text-xs text-slate-500">
+          <p className="mt-3 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
             <Loader2 className="size-3 animate-spin" /> This can take a few seconds for longer documents.
           </p>
         )}

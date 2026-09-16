@@ -89,8 +89,8 @@ export function Copilot() {
 
       {open && (
         <div className="fixed inset-0 z-40 sm:inset-auto sm:bottom-5 sm:right-5 sm:h-[min(640px,calc(100vh-2.5rem))] sm:w-96">
-          <div className="flex h-full flex-col overflow-hidden rounded-none bg-white shadow-2xl ring-1 ring-slate-200 sm:rounded-2xl">
-            <header className="flex items-center gap-2.5 border-b border-slate-100 bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-3 text-white">
+          <div className="flex h-full flex-col overflow-hidden rounded-none bg-white shadow-2xl ring-1 ring-slate-200 sm:rounded-2xl dark:bg-slate-900 dark:ring-slate-800">
+            <header className="flex items-center gap-2.5 border-b border-slate-100 bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-3 text-white dark:border-slate-800">
               <div className="flex size-8 items-center justify-center rounded-full bg-white/15">
                 <Bot className="size-4.5" />
               </div>
@@ -109,16 +109,22 @@ export function Copilot() {
                   <Spinner />
                 </div>
               ) : !status.data?.configured ? (
-                <div className="flex h-full flex-col items-center justify-center gap-2 px-4 text-center text-sm text-slate-500">
-                  <Bot className="size-8 text-slate-300" />
-                  <p className="font-medium text-slate-700">Copilot isn&apos;t configured</p>
-                  <p>Set <code className="rounded bg-slate-100 px-1 py-0.5 text-xs">ANTHROPIC_API_KEY</code> on the API to enable it.</p>
+                <div className="flex h-full flex-col items-center justify-center gap-2 px-4 text-center text-sm text-slate-500 dark:text-slate-400">
+                  <Bot className="size-8 text-slate-300 dark:text-slate-600" />
+                  <p className="font-medium text-slate-700 dark:text-slate-200">Copilot isn&apos;t configured</p>
+                  <p>
+                    Set <code className="rounded bg-slate-100 px-1 py-0.5 text-xs dark:bg-slate-800">ANTHROPIC_API_KEY</code> on the API to enable it.
+                  </p>
                 </div>
               ) : messages.length === 0 ? (
                 <div className="flex h-full flex-col justify-end gap-2 px-1">
-                  <p className="mb-1 text-xs font-medium text-slate-500">Try asking:</p>
+                  <p className="mb-1 text-xs font-medium text-slate-500 dark:text-slate-400">Try asking:</p>
                   {SUGGESTIONS.map((s) => (
-                    <button key={s} onClick={() => send(s)} className="rounded-lg bg-slate-50 px-3 py-2 text-left text-sm text-slate-700 ring-1 ring-slate-200 hover:bg-slate-100">
+                    <button
+                      key={s}
+                      onClick={() => send(s)}
+                      className="rounded-lg bg-slate-50 px-3 py-2 text-left text-sm text-slate-700 ring-1 ring-slate-200 hover:bg-slate-100 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700 dark:hover:bg-slate-700"
+                    >
                       {s}
                     </button>
                   ))}
@@ -129,7 +135,7 @@ export function Copilot() {
                     <div
                       className={cn(
                         'max-w-[85%] whitespace-pre-wrap rounded-2xl px-3.5 py-2 text-sm',
-                        m.role === 'user' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-800',
+                        m.role === 'user' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200',
                       )}
                     >
                       {m.content || (streaming && i === messages.length - 1 && <Loader2 className="size-4 animate-spin" />)}
@@ -138,13 +144,13 @@ export function Copilot() {
                 ))
               )}
               {activeTool && (
-                <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
                   <Loader2 className="size-3 animate-spin" /> Checking {activeTool.toLowerCase()}…
                 </div>
               )}
             </div>
 
-            <form onSubmit={onSubmit} className="flex items-end gap-2 border-t border-slate-100 p-3">
+            <form onSubmit={onSubmit} className="flex items-end gap-2 border-t border-slate-100 p-3 dark:border-slate-800">
               <Textarea
                 value={input}
                 onChange={(e) => setInput(e.target.value)}

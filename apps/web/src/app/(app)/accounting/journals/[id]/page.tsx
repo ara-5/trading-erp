@@ -80,7 +80,7 @@ export default function JournalPage() {
             [
               'Source',
               e.sourceId && sourceHref[e.sourceType] ? (
-                <Link key="s" href={sourceHref[e.sourceType] + e.sourceId} className="text-indigo-600 hover:underline">
+                <Link key="s" href={sourceHref[e.sourceType] + e.sourceId} className="text-indigo-600 dark:text-indigo-400 hover:underline">
                   {humanize(e.sourceType)}
                 </Link>
               ) : (
@@ -95,7 +95,7 @@ export default function JournalPage() {
         <DataTable
           rows={e.lines}
           columns={[
-            { key: 'account', header: 'Account', cell: (l) => <Link href={`/accounting/reports?tab=ledger&accountId=${l.account.id}`} className="text-slate-900 hover:text-indigo-600">{l.account.code} · {l.account.name}</Link> },
+            { key: 'account', header: 'Account', cell: (l) => <Link href={`/accounting/reports?tab=ledger&accountId=${l.account.id}`} className="text-slate-900 dark:text-slate-100 hover:text-indigo-600">{l.account.code} · {l.account.name}</Link> },
             { key: 'memo', header: 'Memo', cell: (l) => l.description ?? '' },
             { key: 'debit', header: 'Debit', align: 'right', cell: (l) => (Number(l.debit) ? money(l.debit) : '') },
             { key: 'credit', header: 'Credit', align: 'right', cell: (l) => (Number(l.credit) ? money(l.credit) : '') },

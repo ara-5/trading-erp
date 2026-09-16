@@ -46,7 +46,7 @@ export default function WarehousesPage() {
             onRowClick={setEditing}
             columns={[
               { key: 'code', header: 'Code', cell: (w) => <span className="font-mono text-xs">{w.code}</span> },
-              { key: 'name', header: 'Name', cell: (w) => <span className="font-medium text-slate-900">{w.name}</span> },
+              { key: 'name', header: 'Name', cell: (w) => <span className="font-medium text-slate-900 dark:text-slate-100">{w.name}</span> },
               { key: 'address', header: 'Address', cell: (w) => w.address ?? '—' },
               { key: 'status', header: '', cell: (w) => !w.isActive && <Badge>Inactive</Badge> },
             ]}
@@ -65,17 +65,17 @@ export default function WarehousesPage() {
               Add
             </Button>
           </form>
-          <ul className="divide-y divide-slate-100 text-sm">
+          <ul className="divide-y divide-slate-100 dark:divide-slate-800 text-sm">
             {categories.data?.map((c) => (
               <li key={c.id} className="flex items-center justify-between py-2">
                 <span>
-                  {c.name} <span className="text-xs text-slate-500">({c._count.products})</span>
+                  {c.name} <span className="text-xs text-slate-500 dark:text-slate-400">({c._count.products})</span>
                 </span>
                 <button
                   onClick={() => removeCategory.mutate(c.id)}
                   disabled={c._count.products > 0}
                   title={c._count.products > 0 ? 'Category has products' : 'Delete'}
-                  className="rounded p-1 text-slate-400 hover:text-rose-600 disabled:opacity-30"
+                  className="rounded p-1 text-slate-400 dark:text-slate-500 hover:text-rose-600 disabled:opacity-30"
                 >
                   <Trash2 className="size-4" />
                 </button>

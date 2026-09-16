@@ -1,4 +1,5 @@
 import { NestExpressApplication } from '@nestjs/platform-express';
+import { authenticator } from 'otplib';
 import request from 'supertest';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { ADMIN, client, createApp, loginAs, uid } from './helpers';
@@ -96,6 +97,47 @@ describe('Auth & security (e2e)', () => {
     } finally {
       process.env.DEMO_MODE = 'false';
     }
+  });
+
+  it('enrolls, requires, and can be recovered from, two-factor authentication', async () => {
+    const email = `twofa.${uid().toLowerCase()}@erp.local`;
+    const admin = await loginAs(app, ADMIN.email, ADMIN.password);
+    await admin.post('/admin/users', { email, name: '2FA Tester', role: 'VIEWER', password: 'TempPass1234' });
+    let user = await loginAs(app, email, 'TempPass1234');
+    await user.post('/auth/change-password', { currentPassword: 'TempPass1234', newPassword: 'MyOwnPassword-42' });
+    user = await loginAs(app, email, 'MyOwnPassword-42');
+
+    const setup = await user.post('/auth/2fa/setup');
+    expect(setup.secret).toEqual(expect.any(String));
+    expect(setup.qrCodeDataUrl).toMatch(/^data:image\/png;base64,/);
+
+    // A wrong code must not activate 2FA.
+    await user.fails('post', '/auth/2fa/enable', { code: '000000' }, 401);
+
+    const { recoveryCodes } = await user.post('/auth/2fa/enable', { code: authenticator.generate(setup.secret) });
+    expect(recoveryCodes).toHaveLength(8);
+
+    // Password alone is no longer enough.
+    const partial = await http().post('/api/auth/login').send({ email, password: 'MyOwnPassword-42' }).expect(200);
+    expect(partial.body.twoFactorRequired).toBe(true);
+    const challenge = partial.body.challenge as string;
+
+    await http().post('/api/auth/2fa/verify-login').send({ challenge, code: '000000' }).expect(401);
+    const verified = await http().post('/api/auth/2fa/verify-login').send({ challenge, code: authenticator.generate(setup.secret) }).expect(200);
+    expect(verified.body.accessToken).toEqual(expect.any(String));
+
+    // A recovery code works once, then is consumed.
+    const challenge2 = (await http().post('/api/auth/login').send({ email, password: 'MyOwnPassword-42' }).expect(200)).body.challenge;
+    await http().post('/api/auth/2fa/verify-login').send({ challenge: challenge2, code: recoveryCodes[0] }).expect(200);
+    const challenge3 = (await http().post('/api/auth/login').send({ email, password: 'MyOwnPassword-42' }).expect(200)).body.challenge;
+    await http().post('/api/auth/2fa/verify-login').send({ challenge: challenge3, code: recoveryCodes[0] }).expect(401);
+
+    user = client(app, verified.body.accessToken);
+    expect(await user.fails('post', '/auth/2fa/disable', { password: 'wrong-password' }, 401)).toMatch(/incorrect/);
+    await user.post('/auth/2fa/disable', { password: 'MyOwnPassword-42' });
+    await http().post('/api/auth/login').send({ email, password: 'MyOwnPassword-42' }).expect(200).expect((res) => {
+      if (res.body.twoFactorRequired) throw new Error('2FA should be disabled');
+    });
   });
 
   it('rate-limits repeated login attempts', async () => {

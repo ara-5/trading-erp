@@ -37,7 +37,7 @@ export default function PayrollPage() {
           </Button>
         }
         columns={[
-          { key: 'number', header: 'Run', cell: (r) => <span className="font-medium text-slate-900">{r.number}</span> },
+          { key: 'number', header: 'Run', cell: (r) => <span className="font-medium text-slate-900 dark:text-slate-100">{r.number}</span> },
           { key: 'period', header: 'Period', cell: (r) => `${date(r.periodStart)} – ${date(r.periodEnd)}` },
           { key: 'pay', header: 'Pay date', cell: (r) => date(r.payDate) },
           { key: 'count', header: 'Employees', align: 'right', cell: (r) => r._count.payslips },
@@ -94,7 +94,7 @@ function NewRunModal({ onClose }: { onClose: () => void }) {
         <Field label="Pay date">
           <Input type="date" required value={f.payDate} onChange={(e) => set('payDate', e.target.value)} />
         </Field>
-        <p className="col-span-3 text-xs text-slate-500">
+        <p className="col-span-3 text-xs text-slate-500 dark:text-slate-400">
           Payslips are generated for all non-terminated employees, with approved unpaid leave deducted pro-rata over working days.
         </p>
       </form>

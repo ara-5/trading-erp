@@ -161,11 +161,11 @@ export function DepartmentsModal({ onClose }: { onClose: () => void }) {
           Add
         </Button>
       </form>
-      <ul className="divide-y divide-slate-100 text-sm">
+      <ul className="divide-y divide-slate-100 dark:divide-slate-800 text-sm">
         {data?.map((d) => (
           <li key={d.id} className="flex justify-between py-2">
             <span>{d.name}</span>
-            <span className="text-slate-500">{d._count.employees} employees</span>
+            <span className="text-slate-500 dark:text-slate-400">{d._count.employees} employees</span>
           </li>
         ))}
       </ul>
@@ -202,11 +202,11 @@ export function LeaveTypesModal({ onClose }: { onClose: () => void }) {
           <Checkbox label="Paid leave" checked={f.isPaid} onChange={(v) => set('isPaid', v)} />
         </div>
       </form>
-      <ul className="divide-y divide-slate-100 text-sm">
+      <ul className="divide-y divide-slate-100 dark:divide-slate-800 text-sm">
         {data?.map((t) => (
           <li key={t.id} className="flex justify-between py-2">
             <span>{t.name}</span>
-            <span className="text-slate-500">
+            <span className="text-slate-500 dark:text-slate-400">
               {t.daysPerYear ? `${t.daysPerYear} days/yr` : 'Unlimited'} · {t.isPaid ? 'Paid' : 'Unpaid'}
             </span>
           </li>

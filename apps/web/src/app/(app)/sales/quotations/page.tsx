@@ -28,7 +28,7 @@ export default function QuotationsPage() {
         </LinkButton>
       }
       columns={[
-        { key: 'number', header: 'Number', cell: (q) => <span className="font-medium text-slate-900">{q.number}</span> },
+        { key: 'number', header: 'Number', cell: (q) => <span className="font-medium text-slate-900 dark:text-slate-100">{q.number}</span> },
         { key: 'customer', header: 'Customer', cell: (q) => q.customer.name },
         { key: 'date', header: 'Date', cell: (q) => date(q.date) },
         { key: 'valid', header: 'Valid until', cell: (q) => date(q.validUntil) },

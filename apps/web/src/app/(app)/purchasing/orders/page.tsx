@@ -29,7 +29,7 @@ export default function PurchaseOrdersPage() {
         </LinkButton>
       }
       columns={[
-        { key: 'number', header: 'Number', cell: (o) => <span className="font-medium text-slate-900">{o.number}</span> },
+        { key: 'number', header: 'Number', cell: (o) => <span className="font-medium text-slate-900 dark:text-slate-100">{o.number}</span> },
         { key: 'supplier', header: 'Supplier', cell: (o) => o.supplier.name },
         { key: 'date', header: 'Date', cell: (o) => date(o.date) },
         { key: 'expected', header: 'Expected', cell: (o) => date(o.expectedDate) },

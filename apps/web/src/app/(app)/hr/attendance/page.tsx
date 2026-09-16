@@ -55,8 +55,8 @@ export default function AttendancePage() {
       />
       <Card padded={false}>
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-slate-200 text-sm">
-            <thead className="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800 text-sm">
+            <thead className="bg-slate-50 dark:bg-slate-800 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
               <tr>
                 <th className="px-4 py-2.5 text-left">Employee</th>
                 <th className="px-4 py-2.5 text-left">Status</th>
@@ -65,7 +65,7 @@ export default function AttendancePage() {
                 <th className="px-4 py-2.5" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {employees.map((e) => {
                 const record = records?.find((r) => r.employeeId === e.id);
                 return <AttendanceRow key={`${e.id}-${day}-${record?.id ?? 'none'}-${record?.status}`} employee={e} day={day} record={record} />;
@@ -99,10 +99,10 @@ function AttendanceRow({ employee, day, record }: { employee: EmployeeRecord; da
   return (
     <tr>
       <td className="px-4 py-2">
-        <p className="font-medium text-slate-900">
+        <p className="font-medium text-slate-900 dark:text-slate-100">
           {employee.firstName} {employee.lastName}
         </p>
-        <p className="text-xs text-slate-500">{employee.jobTitle}</p>
+        <p className="text-xs text-slate-500 dark:text-slate-400">{employee.jobTitle}</p>
       </td>
       <td className="px-4 py-2">
         <Select value={status} onChange={(e) => setStatus(e.target.value)} className="h-8 w-40">

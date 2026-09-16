@@ -26,14 +26,14 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           <div
             key={t.id}
             role="status"
-            className="pointer-events-auto flex w-full items-start gap-2.5 rounded-lg bg-white p-3 text-sm shadow-lg ring-1 ring-slate-200"
+            className="pointer-events-auto flex w-full items-start gap-2.5 rounded-lg bg-white dark:bg-slate-900 p-3 text-sm shadow-lg ring-1 ring-slate-200 dark:ring-slate-800"
           >
             {t.type === 'success' ? (
               <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-emerald-600" />
             ) : (
               <XCircle className="mt-0.5 size-4 shrink-0 text-rose-600" />
             )}
-            <p className="text-slate-700">{t.message}</p>
+            <p className="text-slate-700 dark:text-slate-300">{t.message}</p>
           </div>
         ))}
       </div>

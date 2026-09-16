@@ -52,7 +52,7 @@ export default function PaymentsPage() {
           </>
         }
         columns={[
-          { key: 'number', header: 'Number', cell: (p) => <span className="font-medium text-slate-900">{p.number}</span> },
+          { key: 'number', header: 'Number', cell: (p) => <span className="font-medium text-slate-900 dark:text-slate-100">{p.number}</span> },
           { key: 'date', header: 'Date', cell: (p) => date(p.date) },
           { key: 'dir', header: 'Type', cell: (p) => (p.direction === 'RECEIVED' ? <Badge tone="green">Received</Badge> : <Badge tone="blue">Paid</Badge>) },
           { key: 'party', header: 'Party', cell: (p) => p.customer?.name ?? p.supplier?.name },

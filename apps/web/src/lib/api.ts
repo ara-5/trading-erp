@@ -23,7 +23,7 @@ export interface Paged<T> {
 }
 
 type Query = Record<string, string | number | boolean | null | undefined>;
-type SessionUser = { id: string; email: string; name: string; role: string; mustChangePassword: boolean };
+type SessionUser = { id: string; email: string; name: string; role: string; mustChangePassword: boolean; twoFactorEnabled: boolean };
 
 let accessToken: string | null = null;
 let refreshing: Promise<string | null> | null = null;

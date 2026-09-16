@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, Injectable, Module, NotFoundException, Post, Req, Res, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, HttpCode, Injectable, Module, NotFoundException, Post, Req, Res, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Throttle } from '@nestjs/throttler';
@@ -6,6 +6,8 @@ import { User } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { createHash, randomBytes } from 'crypto';
 import type { CookieOptions, Request, Response } from 'express';
+import { authenticator } from 'otplib';
+import * as QRCode from 'qrcode';
 import { z } from 'zod';
 import { AllowPendingPasswordChange, AuthUser, CurrentUser, Public } from '../common/auth';
 import { AuditService } from '../common/common.module';
@@ -14,6 +16,7 @@ import { PrismaService } from '../prisma/prisma.service';
 
 export const REFRESH_COOKIE = 'erp_rt';
 const REUSE_GRACE_MS = 30_000;
+const TWO_FACTOR_ISSUER = 'Trading ERP';
 
 const loginSchema = z.object({
   email: z.string().trim().toLowerCase().email(),
@@ -27,7 +30,12 @@ const changePasswordSchema = z
   })
   .refine((v) => v.currentPassword !== v.newPassword, { message: 'New password must be different', path: ['newPassword'] });
 
+const twoFactorCodeSchema = z.object({ code: z.string().trim().regex(/^\d{6}$/, 'Enter the 6-digit code') });
+const twoFactorDisableSchema = z.object({ password: z.string().min(1) });
+const twoFactorVerifySchema = z.object({ challenge: z.string().min(1), code: z.string().trim().min(6).max(20) });
+
 const hashToken = (token: string) => createHash('sha256').update(token).digest('hex');
+const normalizeRecoveryCode = (code: string) => code.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
 
 @Injectable()
 export class AuthService {
@@ -43,8 +51,72 @@ export class AuthService {
     // Always run bcrypt so response time doesn't reveal whether the email exists.
     const valid = await bcrypt.compare(password, user?.passwordHash ?? '$2a$10$invalidinvalidinvalidinvalidinvalidinvalidinvalidinva');
     if (!user || !user.isActive || !valid) throw new UnauthorizedException('Invalid email or password');
+    if (user.twoFactorEnabled) {
+      const challenge = await this.jwt.signAsync({ sub: user.id, purpose: '2fa-login' }, { expiresIn: '5m' });
+      return { twoFactorRequired: true as const, challenge };
+    }
     await this.audit.log(user.id, 'login', 'User', user.id);
+    return { twoFactorRequired: false as const, session: await this.issue(user, userAgent) };
+  }
+
+  /** Second step of login when the account has 2FA enabled: exchanges the short-lived challenge + a TOTP/recovery code for a session. */
+  async verifyTwoFactorLogin(challenge: string, code: string, userAgent?: string) {
+    let payload: { sub: string; purpose: string };
+    try {
+      payload = await this.jwt.verifyAsync(challenge);
+    } catch {
+      throw new UnauthorizedException('This code has expired — please sign in again');
+    }
+    if (payload.purpose !== '2fa-login') throw new UnauthorizedException();
+    const user = await this.prisma.user.findUnique({ where: { id: payload.sub } });
+    if (!user || !user.isActive || !user.twoFactorEnabled) throw new UnauthorizedException();
+    if (!(await this.consumeTwoFactorCode(user, code))) throw new UnauthorizedException('Invalid code');
+    await this.audit.log(user.id, 'login-2fa', 'User', user.id);
     return this.issue(user, userAgent);
+  }
+
+  /** Starts 2FA enrollment: generates (but does not yet activate) a secret and returns a scannable QR code. */
+  async setupTwoFactor(userId: string) {
+    const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
+    const secret = authenticator.generateSecret();
+    await this.prisma.user.update({ where: { id: userId }, data: { twoFactorSecret: secret, twoFactorEnabled: false, twoFactorRecoveryCodes: [] } });
+    const otpauthUrl = authenticator.keyuri(user.email, TWO_FACTOR_ISSUER, secret);
+    return { secret, otpauthUrl, qrCodeDataUrl: await QRCode.toDataURL(otpauthUrl) };
+  }
+
+  /** Confirms enrollment with one code from the authenticator app, then activates 2FA and issues one-time recovery codes. */
+  async enableTwoFactor(userId: string, code: string) {
+    const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
+    if (!user.twoFactorSecret) throw new BadRequestException('Start 2FA setup first');
+    if (!authenticator.verify({ token: code, secret: user.twoFactorSecret })) throw new UnauthorizedException('Invalid code');
+    const recoveryCodes = Array.from({ length: 8 }, () => randomBytes(5).toString('hex').toUpperCase().match(/.{1,4}/g)!.join('-'));
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { twoFactorEnabled: true, twoFactorRecoveryCodes: recoveryCodes.map((c) => hashToken(normalizeRecoveryCode(c))) },
+    });
+    await this.audit.log(userId, '2fa-enabled', 'User', userId);
+    return { recoveryCodes };
+  }
+
+  async disableTwoFactor(userId: string, password: string) {
+    const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
+    if (!(await bcrypt.compare(password, user.passwordHash))) throw new UnauthorizedException('Current password is incorrect');
+    await this.prisma.user.update({ where: { id: userId }, data: { twoFactorEnabled: false, twoFactorSecret: null, twoFactorRecoveryCodes: [] } });
+    await this.audit.log(userId, '2fa-disabled', 'User', userId);
+  }
+
+  /** Accepts either a live TOTP code or a single-use recovery code (consuming it). */
+  private async consumeTwoFactorCode(user: User, code: string): Promise<boolean> {
+    if (user.twoFactorSecret && /^\d{6}$/.test(code.trim()) && authenticator.verify({ token: code.trim(), secret: user.twoFactorSecret })) {
+      return true;
+    }
+    const hashed = hashToken(normalizeRecoveryCode(code));
+    if (!user.twoFactorRecoveryCodes.includes(hashed)) return false;
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { twoFactorRecoveryCodes: user.twoFactorRecoveryCodes.filter((c) => c !== hashed) },
+    });
+    return true;
   }
 
   /** Rotates the refresh token. Presenting an already-rotated token revokes every session for that user. */
@@ -115,7 +187,7 @@ export class AuthService {
   }
 
   private publicUser(u: User) {
-    return { id: u.id, email: u.email, name: u.name, role: u.role, mustChangePassword: u.mustChangePassword };
+    return { id: u.id, email: u.email, name: u.name, role: u.role, mustChangePassword: u.mustChangePassword, twoFactorEnabled: u.twoFactorEnabled };
   }
 }
 
@@ -125,7 +197,7 @@ export class AuthController {
 
   private respond(res: Response, session: { accessToken: string; refreshToken: string; expiresAt: Date; user: unknown }) {
     res.cookie(REFRESH_COOKIE, session.refreshToken, this.auth.cookieOptions(session.expiresAt));
-    return { accessToken: session.accessToken, user: session.user };
+    return { twoFactorRequired: false as const, accessToken: session.accessToken, user: session.user };
   }
 
   @Public()
@@ -133,7 +205,21 @@ export class AuthController {
   @Post('login')
   @HttpCode(200)
   async login(@Body(new ZodPipe(loginSchema)) body: z.infer<typeof loginSchema>, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
-    return this.respond(res, await this.auth.login(body.email, body.password, req.headers['user-agent']));
+    const result = await this.auth.login(body.email, body.password, req.headers['user-agent']);
+    if (result.twoFactorRequired) return { twoFactorRequired: true as const, challenge: result.challenge };
+    return this.respond(res, result.session);
+  }
+
+  @Public()
+  @Throttle({ default: { limit: () => Number(process.env.LOGIN_RATE_LIMIT ?? 10), ttl: 60_000 } })
+  @Post('2fa/verify-login')
+  @HttpCode(200)
+  async verifyTwoFactorLogin(
+    @Body(new ZodPipe(twoFactorVerifySchema)) body: z.infer<typeof twoFactorVerifySchema>,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    return this.respond(res, await this.auth.verifyTwoFactorLogin(body.challenge, body.code, req.headers['user-agent']));
   }
 
   @Public()
@@ -172,6 +258,24 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     return this.respond(res, await this.auth.changePassword(user.sub, body.currentPassword, body.newPassword, req.headers['user-agent']));
+  }
+
+  @Post('2fa/setup')
+  @HttpCode(200)
+  setupTwoFactor(@CurrentUser() user: AuthUser) {
+    return this.auth.setupTwoFactor(user.sub);
+  }
+
+  @Post('2fa/enable')
+  @HttpCode(200)
+  enableTwoFactor(@CurrentUser() user: AuthUser, @Body(new ZodPipe(twoFactorCodeSchema)) body: z.infer<typeof twoFactorCodeSchema>) {
+    return this.auth.enableTwoFactor(user.sub, body.code);
+  }
+
+  @Post('2fa/disable')
+  @HttpCode(204)
+  disableTwoFactor(@CurrentUser() user: AuthUser, @Body(new ZodPipe(twoFactorDisableSchema)) body: z.infer<typeof twoFactorDisableSchema>) {
+    return this.auth.disableTwoFactor(user.sub, body.password);
   }
 }
 

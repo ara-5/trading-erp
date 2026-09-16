@@ -128,9 +128,9 @@ export function LineItems({
 
   return (
     <div>
-      <div className="overflow-x-auto rounded-lg ring-1 ring-slate-200">
+      <div className="overflow-x-auto rounded-lg ring-1 ring-slate-200 dark:ring-slate-800">
         <table className="min-w-full text-sm">
-          <thead className="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <thead className="bg-slate-50 dark:bg-slate-800 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
             <tr>
               <th className="px-2 py-2 text-left">{allowAccount ? 'Product / account' : 'Product'}</th>
               <th className="px-2 py-2 text-left">Description</th>
@@ -142,7 +142,7 @@ export function LineItems({
               <th className="w-10" />
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
             {lines.map((l) => (
               <tr key={l.key} className="align-top">
                 <td className="min-w-52 px-2 py-1.5">
@@ -182,13 +182,13 @@ export function LineItems({
                 <td className="px-2 py-1.5">
                   <Input type="number" min="0" max="100" step="any" value={l.taxRate} onChange={(e) => update(l.key, { taxRate: e.target.value })} className={numCell} />
                 </td>
-                <td className="tabular px-2 py-3 text-right text-slate-800">{money(lineAmounts(l).net)}</td>
+                <td className="tabular px-2 py-3 text-right text-slate-800 dark:text-slate-200">{money(lineAmounts(l).net)}</td>
                 <td className="px-1 py-1.5">
                   <button
                     type="button"
                     onClick={() => onChange(lines.filter((x) => x.key !== l.key))}
                     disabled={lines.length === 1}
-                    className="rounded p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 disabled:opacity-30"
+                    className="rounded p-1.5 text-slate-400 dark:text-slate-500 hover:bg-rose-50 hover:text-rose-600 disabled:opacity-30"
                     aria-label="Remove line"
                   >
                     <Trash2 className="size-4" />
@@ -221,8 +221,8 @@ export function Totals({ subtotal, taxTotal, total, amountPaid }: { subtotal: st
   return (
     <dl className="w-full space-y-1 text-sm sm:w-64">
       {rows.map(([k, v, strong]) => (
-        <div key={k} className={cn('flex justify-between', strong && 'border-t border-slate-200 pt-1 font-semibold text-slate-900')}>
-          <dt className={strong ? '' : 'text-slate-500'}>{k}</dt>
+        <div key={k} className={cn('flex justify-between', strong && 'border-t border-slate-200 dark:border-slate-800 pt-1 font-semibold text-slate-900 dark:text-slate-100')}>
+          <dt className={strong ? '' : 'text-slate-500 dark:text-slate-400'}>{k}</dt>
           <dd className="tabular">{money(v)}</dd>
         </div>
       ))}
@@ -251,8 +251,8 @@ export function LinesTable({ lines, progress }: { lines: DocLine[]; progress?: {
   const showDiscount = lines.some((l) => Number(l.discountPct ?? 0) > 0);
   return (
     <div className="overflow-x-auto">
-      <table className="min-w-full divide-y divide-slate-200 text-sm">
-        <thead className="bg-slate-50/80 text-xs font-semibold uppercase tracking-wide text-slate-500">
+      <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800 text-sm">
+        <thead className="bg-slate-50/80 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
           <tr>
             <th className="px-4 py-2.5 text-left">Item</th>
             <th className="px-4 py-2.5 text-right">Qty</th>
@@ -267,25 +267,25 @@ export function LinesTable({ lines, progress }: { lines: DocLine[]; progress?: {
             <th className="px-4 py-2.5 text-right">Amount</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-100">
+        <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
           {lines.map((l) => (
             <tr key={l.id}>
               <td className="px-4 py-2.5">
-                <p className="font-medium text-slate-800">{l.description ?? l.product?.name}</p>
-                <p className="text-xs text-slate-500">{l.product ? `${l.product.sku}` : l.account ? `${l.account.code} · ${l.account.name}` : ''}</p>
+                <p className="font-medium text-slate-800 dark:text-slate-200">{l.description ?? l.product?.name}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">{l.product ? `${l.product.sku}` : l.account ? `${l.account.code} · ${l.account.name}` : ''}</p>
               </td>
               <td className="tabular px-4 py-2.5 text-right">
-                {num(l.quantity)} <span className="text-xs text-slate-400">{l.product?.uom}</span>
+                {num(l.quantity)} <span className="text-xs text-slate-400 dark:text-slate-500">{l.product?.uom}</span>
               </td>
               {progress?.map((p) => (
                 <td key={p.label} className="tabular px-4 py-2.5 text-right">
-                  <span className={Number(l[p.key]) >= Number(l.quantity) ? 'text-emerald-700' : 'text-slate-700'}>{num(l[p.key] as string)}</span>
+                  <span className={Number(l[p.key]) >= Number(l.quantity) ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-700 dark:text-slate-300'}>{num(l[p.key] as string)}</span>
                 </td>
               ))}
               <td className="tabular px-4 py-2.5 text-right">{money(l.unitPrice)}</td>
               {showDiscount && <td className="tabular px-4 py-2.5 text-right">{num(l.discountPct)}%</td>}
               <td className="tabular px-4 py-2.5 text-right">{num(l.taxRate)}%</td>
-              <td className="tabular px-4 py-2.5 text-right font-medium text-slate-900">{money(l.lineTotal)}</td>
+              <td className="tabular px-4 py-2.5 text-right font-medium text-slate-900 dark:text-slate-100">{money(l.lineTotal)}</td>
             </tr>
           ))}
         </tbody>
